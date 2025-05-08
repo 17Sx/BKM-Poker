@@ -3,7 +3,6 @@
 import React from 'react';
 
 export default function Providers({ children }: { children: React.ReactNode }) {
-  // Force l'hydratation côté client
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
@@ -11,7 +10,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   }, []);
 
   if (!mounted) {
-    return null;
+    return <div style={{ visibility: 'hidden' }}>{children}</div>;
   }
 
   return <>{children}</>;
