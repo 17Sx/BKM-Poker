@@ -1,11 +1,12 @@
 "use client";
 
-
-import GooeyNav from "@/components/ui/GooeyNav";
-import Waves from "@/components/ui/Waves";
+import dynamic from 'next/dynamic';
 import { HoverBorderGradient } from "@/components/ui/hover-border-gradient";
-import Footer from "@/components/Footer";
 import { ArrowRight } from "lucide-react";
+
+const GooeyNav = dynamic(() => import("@/components/ui/GooeyNav"), { ssr: false });
+const Waves = dynamic(() => import("@/components/ui/Waves"), { ssr: false });
+const Footer = dynamic(() => import("@/components/Footer"), { ssr: false });
 
 export default function Home() {
   return (

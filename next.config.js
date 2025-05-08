@@ -7,11 +7,14 @@ const nextConfig = {
     unoptimized: true,
   },
   experimental: {
-    optimizeCss: false,
+    optimizeCss: true,
     optimizePackageImports: ['framer-motion', 'lucide-react'],
   },
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
+  },
+  webpack: (config) => {
+    return config;
   },
 }
 

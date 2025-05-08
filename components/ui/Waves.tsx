@@ -1,8 +1,10 @@
+"use client";
+
 /*
 	Installed from https://reactbits.dev/ts/tailwind/
 */
 
-import React, { useRef, useEffect, CSSProperties } from "react";
+import React, { useRef, useEffect, CSSProperties, useState } from "react";
 
 class Grad {
   x: number;
@@ -205,6 +207,11 @@ const Waves: React.FC<WavesProps> = ({
   });
 
   const frameIdRef = useRef<number | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     configRef.current = {
@@ -233,6 +240,8 @@ const Waves: React.FC<WavesProps> = ({
   ]);
 
   useEffect(() => {
+    if (!isMounted) return;
+    
     const canvas = canvasRef.current;
     const container = containerRef.current;
     if (!canvas || !container) return;
@@ -412,14 +421,18 @@ const Waves: React.FC<WavesProps> = ({
     window.addEventListener("touchmove", onTouchMove, { passive: false });
 
     return () => {
-      window.removeEventListener("resize", onResize);
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("touchmove", onTouchMove);
       if (frameIdRef.current !== null) {
         cancelAnimationFrame(frameIdRef.current);
       }
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("touchmove", onTouchMove);
     };
-  }, []);
+  }, [isMounted]);
+
+  if (!isMounted) {
+    return <div className={className} style={{...style, backgroundColor}} />;
+  }
 
   return (
     <div

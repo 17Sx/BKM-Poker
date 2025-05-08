@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import Providers from "./Providers";
 
 const metrik = localFont({
   src: [
@@ -36,8 +37,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr">
-      <body className={`${metrik.variable} ${inter.variable} antialiased`}>
-        {children}
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </head>
+      <body className={`${metrik.variable} ${inter.variable} antialiased bg-background text-foreground min-h-screen`}>
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );

@@ -145,8 +145,18 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
       }
     }
   };
+
+  // Utiliser useState pour gérer le montage côté client uniquement
+  const [isMounted, setIsMounted] = useState(false);
+  
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
     if (!navRef.current || !containerRef.current) return;
+    
     const activeLi = navRef.current.querySelectorAll("li")[
       activeIndex
     ] as HTMLElement;
@@ -164,7 +174,12 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
     });
     resizeObserver.observe(containerRef.current);
     return () => resizeObserver.disconnect();
-  }, [activeIndex]);
+  }, [activeIndex, isMounted]);
+
+  // Ne rendre le composant complet que côté client
+  if (!isMounted) {
+    return <div className="w-full min-h-16" />;
+  }
 
   return (
     <>
