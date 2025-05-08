@@ -54,7 +54,7 @@ export default function Home() {
             </h1>
             <div className="absolute inset-0 bg-gradient-to-b from-background/0 via-background/50 to-background/0 blur-3xl -z-10" />
           </div>
-          <p className="text-xl md:text-2xl max-w-2xl text-white opacity-80 mt-8 font-sans tracking-wide">
+          <p className="text-xl md:text-2xl max-w-3xl text-white opacity-80 mt-8 font-sans tracking-wide">
             Master your bankroll, elevate your game. Track, analyze, and optimize your poker journey with precision.
           </p>
           
