@@ -10,6 +10,9 @@ export default function Footer() {
             <p className="text-sm text-white/40 font-sans tracking-wide">
               © 2025 BKM Poker. All rights reserved.
             </p>
+            <p className="text-xs text-white/20 font-sans">
+              Created by <a href="https://x.com/TheTroxxy" className="hover:text-white/40 transition-colors duration-200">Troxxy</a> & <a href="https://github.com/17sx" className="hover:text-white/40 transition-colors duration-200">17Sx</a>
+            </p>
           </div>
         </div>
       </footer>
