@@ -10,6 +10,7 @@
     "analyze": "ANALYZE=true next build"
   },
   "dependencies": {
+    "critters": "^0.0.20",
     "framer-motion": "^11.0.3",
     "lucide-react": "^0.508.0",
     "next": "14.1.0",
