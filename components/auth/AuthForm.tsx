@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useRouter } from 'next/navigation'
-import { User, Key, ArrowRight, Eye, EyeOff } from 'lucide-react'
+import { User, Key, ArrowRight, Eye, EyeOff, Spade } from 'lucide-react'
 
 export default function AuthForm() {
   const [email, setEmail] = useState('')
@@ -87,8 +87,16 @@ export default function AuthForm() {
       
       <div className="w-full max-w-md space-y-8 relative z-10">
         <div className="text-center">
-          <h2 className="text-4xl font-bold text-white mb-2">
-            Welcome to BKM Poker
+          <h2 className="text-4xl font-bold text-white mb-2 flex items-center justify-center gap-2">
+            Welcome to{' '}
+            <span className="relative">
+              <span className="relative z-10 inline-block">
+                BKM Poker
+              </span>
+              <span className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/20 to-primary/0 blur-sm animate-pulse" />
+              <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-gradient-to-r from-primary via-white to-primary" />
+            </span>
+            <Spade size={24} strokeWidth={1.5} className="text-white z-20 mt-3 ml-1 hover:stroke-primary-dark transition-all duration-200" />
           </h2>
           <p className="text-xl text-gray-400">
             {isSignUp ? 'Create your account to get started' : 'Sign in to your account'}

@@ -4,8 +4,8 @@ import dynamic from 'next/dynamic';
 import { HoverBorderGradient } from "@/components/ui/hover-border-gradient";
 import { ArrowRight } from "lucide-react";
 import { useState, useEffect } from "react";
+import Header from "@/components/Header";
 
-const GooeyNav = dynamic(() => import("@/components/ui/GooeyNav"), { ssr: false });
 const Waves = dynamic(() => import("@/components/ui/Waves"), { ssr: false });
 const Footer = dynamic(() => import("@/components/Footer"), { ssr: false });
 
@@ -51,30 +51,7 @@ export default function Home() {
         className="opacity-90"
       />
 
-      <header className="w-full min-h-16 flex justify-center items-center pt-8 absolute top-0 left-0 z-50">
-        <GooeyNav items={[
-          {
-            label: "Home",
-            href: "/",
-          },
-          {
-            label: "Stats",
-            href: "/",
-          },
-          {
-            label: "History",
-            href: "/",
-          },
-          {
-            label: "Contact",
-            href: "/",
-          },
-          {
-            label: "Login",
-            href: "/auth",
-          },
-        ]} />
-      </header>
+      <Header />
 
       <main className="relative z-10 h-screen flex items-center justify-center">
         <div className="container mx-auto px-4 flex flex-col items-center justify-center text-center">
