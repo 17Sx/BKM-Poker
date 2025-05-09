@@ -9,11 +9,9 @@ const GooeyNav = dynamic(() => import("@/components/ui/GooeyNav"), { ssr: false 
 const Waves = dynamic(() => import("@/components/ui/Waves"), { ssr: false });
 const Footer = dynamic(() => import("@/components/Footer"), { ssr: false });
 
-// Couleurs du poker (cœur, carreau, trèfle, pique + jetons)
 const pokerColors = [
-  "#e74c3c", 
-  "#2c3e50", 
-];
+  "#000000", 
+]
 
 export default function Home() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -50,7 +48,7 @@ export default function Home() {
         waveSpeedY={0.005}
         waveAmpX={32}
         waveAmpY={16}
-        className="opacity-50"
+        className="opacity-90"
       />
 
       <header className="w-full min-h-16 flex justify-center items-center pt-8 absolute top-0 left-0 z-50">
