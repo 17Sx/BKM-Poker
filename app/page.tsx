@@ -71,7 +71,7 @@ export default function Home() {
           },
           {
             label: "Login",
-            href: "/",
+            href: "/auth",
           },
         ]} />
       </header>
@@ -141,7 +141,7 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row gap-4 mt-12">
             <HoverBorderGradient
               as="button"
-              href="/"
+              href="/auth"
               containerClassName="bg-primary/20"
               className="bg-primary text-white opacity-70"
             >

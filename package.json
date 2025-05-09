@@ -10,10 +10,14 @@
     "analyze": "ANALYZE=true next build"
   },
   "dependencies": {
+    "@supabase/auth-helpers-nextjs": "^0.10.0",
+    "@supabase/supabase-js": "^2.49.4",
+    "@types/jsonwebtoken": "^9.0.9",
     "clsx": "^2.1.1",
     "critters": "^0.0.20",
     "framer-motion": "^11.0.3",
-    "lucide-react": "^0.323.0",
+    "jsonwebtoken": "^9.0.2",
+    "lucide-react": "^0.509.0",
     "next": "14.1.0",
     "react": "^18",
     "react-dom": "^18",
