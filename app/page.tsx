@@ -130,7 +130,7 @@ export default function Home() {
             
             <HoverBorderGradient
               as="button"
-              href="/"
+              href="/about"
               containerClassName="bg-white/20"
               className="bg-transparent text-white opacity-70"
             >
