@@ -54,6 +54,7 @@ export default function DashboardPage() {
   const [bankrollHistory, setBankrollHistory] = useState<BankrollHistory[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedSession, setSelectedSession] = useState<Session | null>(null)
   const [stats, setStats] = useState<BankrollStats>({
     id: '',
     user_id: '',
@@ -76,6 +77,8 @@ export default function DashboardPage() {
   })
   const [isEditingBankroll, setIsEditingBankroll] = useState(false)
   const [newBankrollValue, setNewBankrollValue] = useState('')
+  const [isEditingSession, setIsEditingSession] = useState(false)
+  const [editingSession, setEditingSession] = useState<Session | null>(null)
   const supabase = createClientComponentClient()
 
   const fetchData = async () => {
@@ -255,7 +258,6 @@ export default function DashboardPage() {
         .update({ 
           initial_bankroll: newValue,
             total_bankroll: newValue + totalProfit,
-          updated_at: new Date().toISOString()
         })
         .eq('user_id', user.id)
 
@@ -370,6 +372,76 @@ export default function DashboardPage() {
         date: new Date().toISOString().split('T')[0]
       })
       fetchData() // Refresh all data
+    } catch (error) {
+      console.error('Error:', error)
+      toast.error(error instanceof Error ? error.message : 'An error occurred')
+    }
+  }
+
+  const handleDeleteSession = async (sessionId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (!user) {
+        toast.error('You must be logged in to delete a session')
+        return
+      }
+
+      const { error } = await supabase
+        .from('poker_sessions')
+        .delete()
+        .eq('id', sessionId)
+        .eq('user_id', user.id)
+
+      if (error) throw new Error('Error deleting session')
+
+      toast.success('Session deleted successfully')
+      fetchData() // Refresh data
+    } catch (error) {
+      console.error('Error:', error)
+      toast.error(error instanceof Error ? error.message : 'An error occurred')
+    }
+  }
+
+  const handleEditSession = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingSession) return
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (!user) {
+        toast.error('You must be logged in to edit a session')
+        return
+      }
+
+      // Format the data properly
+      const updatedSession = {
+        buy_in: Number(editingSession.buy_in),
+        cash_out: Number(editingSession.cash_out),
+        duration: Number(editingSession.duration),
+        notes: editingSession.notes || '',
+        game_type: editingSession.game_type,
+        location: editingSession.location,
+        blinds: editingSession.blinds
+      }
+
+      // Use a simple update
+      const { error } = await supabase
+        .from('poker_sessions')
+        .update(updatedSession)
+        .eq('id', editingSession.id)
+        .eq('user_id', user.id)
+
+      if (error) {
+        console.error('Supabase error:', error)
+        throw new Error(error.message)
+      }
+
+      toast.success('Session updated successfully')
+      setIsEditingSession(false)
+      setEditingSession(null)
+      fetchData() // Refresh data
     } catch (error) {
       console.error('Error:', error)
       toast.error(error instanceof Error ? error.message : 'An error occurred')
@@ -674,11 +746,16 @@ export default function DashboardPage() {
                       <TableHead className="text-gray-400">Duration</TableHead>
                       <TableHead className="text-gray-400">Profit/Loss</TableHead>
                       <TableHead className="text-gray-400">ROI</TableHead>
+                      <TableHead className="text-gray-400">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {sessions.map((session) => (
-                      <TableRow key={session.id}>
+                      <TableRow 
+                        key={session.id}
+                        className="cursor-pointer hover:bg-black/30 transition-colors duration-200"
+                        onClick={() => setSelectedSession(session)}
+                      >
                         <TableCell className="text-white">
                           {new Date(session.created_at).toLocaleDateString()}
                         </TableCell>
@@ -690,6 +767,33 @@ export default function DashboardPage() {
                         </TableCell>
                         <TableCell className={session.roi >= 0 ? "text-green-500" : "text-red-500"}>
                           {session.roi.toFixed(2)}%
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingSession(session);
+                                setIsEditingSession(true);
+                              }}
+                              className="p-1.5 bg-primary/20 hover:bg-primary/30 text-white rounded-md transition-all duration-200"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteSession(session.id);
+                              }}
+                              className="p-1.5 bg-red-500/20 hover:bg-red-500/30 text-white rounded-md transition-all duration-200"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -730,6 +834,201 @@ export default function DashboardPage() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Notes Modal */}
+        {selectedSession && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-black/90 border border-white/10 rounded-lg w-full max-w-2xl">
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-bold text-white">Session Details</h2>
+                  <button
+                    onClick={() => setSelectedSession(null)}
+                    className="text-gray-400 hover:text-white transition-colors duration-200"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-400">Date</p>
+                      <p className="text-white">{new Date(selectedSession.created_at).toLocaleDateString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-400">Game Type</p>
+                      <p className="text-white">{selectedSession.game_type}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-400">Blinds</p>
+                      <p className="text-white">{selectedSession.blinds}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-400">Location</p>
+                      <p className="text-white">{selectedSession.location}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-400">Duration</p>
+                      <p className="text-white">{selectedSession.duration}h</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-400">Profit/Loss</p>
+                      <p className={selectedSession.profit_loss >= 0 ? "text-green-500" : "text-red-500"}>
+                        ${selectedSession.profit_loss.toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-sm text-gray-400 mb-2">Notes</p>
+                    <div className="bg-black/40 border border-gray-700 rounded-lg p-4">
+                      <p className="text-white whitespace-pre-wrap">
+                        {selectedSession.notes || "No notes for this session."}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Session Modal */}
+        {isEditingSession && editingSession && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-black/90 border border-white/10 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-bold text-white">Edit Session</h2>
+                  <button
+                    onClick={() => {
+                      setIsEditingSession(false)
+                      setEditingSession(null)
+                    }}
+                    className="text-gray-400 hover:text-white transition-colors duration-200"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                <form onSubmit={handleEditSession} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div className="group">
+                      <Label htmlFor="edit-date" className="text-gray-400 group-hover:text-white transition-colors duration-200">Date *</Label>
+                      <Input 
+                        id="edit-date" 
+                        type="date" 
+                        className="bg-black/40 border-gray-700 text-white hover:border-primary/50 focus:border-primary transition-all duration-200"
+                        value={new Date(editingSession.created_at).toISOString().split('T')[0]}
+                        onChange={(e) => setEditingSession({...editingSession, created_at: e.target.value})}
+                        required
+                      />
+                    </div>
+                    <div className="group">
+                      <Label htmlFor="edit-game-type" className="text-gray-400 group-hover:text-white transition-colors duration-200">Game Type *</Label>
+                      <Input 
+                        id="edit-game-type" 
+                        className="bg-black/40 border-gray-700 text-white hover:border-primary/50 focus:border-primary transition-all duration-200"
+                        value={editingSession.game_type}
+                        onChange={(e) => setEditingSession({...editingSession, game_type: e.target.value})}
+                        required
+                      />
+                    </div>
+                    <div className="group">
+                      <Label htmlFor="edit-blinds" className="text-gray-400 group-hover:text-white transition-colors duration-200">Blinds *</Label>
+                      <Input 
+                        id="edit-blinds" 
+                        className="bg-black/40 border-gray-700 text-white hover:border-primary/50 focus:border-primary transition-all duration-200"
+                        value={editingSession.blinds}
+                        onChange={(e) => setEditingSession({...editingSession, blinds: e.target.value})}
+                        required
+                      />
+                    </div>
+                    <div className="group">
+                      <Label htmlFor="edit-location" className="text-gray-400 group-hover:text-white transition-colors duration-200">Location *</Label>
+                      <Input 
+                        id="edit-location" 
+                        className="bg-black/40 border-gray-700 text-white hover:border-primary/50 focus:border-primary transition-all duration-200"
+                        value={editingSession.location}
+                        onChange={(e) => setEditingSession({...editingSession, location: e.target.value})}
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="group">
+                      <Label htmlFor="edit-buyin" className="text-gray-400 group-hover:text-white transition-colors duration-200">Buy-in *</Label>
+                      <Input 
+                        id="edit-buyin" 
+                        type="number" 
+                        min="0"
+                        step="0.01"
+                        className="bg-black/40 border-gray-700 text-white hover:border-primary/50 focus:border-primary transition-all duration-200"
+                        value={editingSession.buy_in}
+                        onChange={(e) => setEditingSession({...editingSession, buy_in: parseFloat(e.target.value)})}
+                        required
+                      />
+                    </div>
+                    <div className="group">
+                      <Label htmlFor="edit-cashout" className="text-gray-400 group-hover:text-white transition-colors duration-200">Cash-out *</Label>
+                      <Input 
+                        id="edit-cashout" 
+                        type="number" 
+                        min="0"
+                        step="0.01"
+                        className="bg-black/40 border-gray-700 text-white hover:border-primary/50 focus:border-primary transition-all duration-200"
+                        value={editingSession.cash_out}
+                        onChange={(e) => setEditingSession({...editingSession, cash_out: parseFloat(e.target.value)})}
+                        required
+                      />
+                    </div>
+                    <div className="group">
+                      <Label htmlFor="edit-duration" className="text-gray-400 group-hover:text-white transition-colors duration-200">Duration (hours) *</Label>
+                      <Input 
+                        id="edit-duration" 
+                        type="number" 
+                        min="0"
+                        step="0.5"
+                        className="bg-black/40 border-gray-700 text-white hover:border-primary/50 focus:border-primary transition-all duration-200"
+                        value={editingSession.duration}
+                        onChange={(e) => setEditingSession({...editingSession, duration: parseFloat(e.target.value)})}
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="col-span-2">
+                    <div className="group">
+                      <Label htmlFor="edit-notes" className="text-gray-400 group-hover:text-white transition-colors duration-200">Notes</Label>
+                      <Input 
+                        id="edit-notes" 
+                        className="bg-black/40 border-gray-700 text-white hover:border-primary/50 focus:border-primary transition-all duration-200"
+                        value={editingSession.notes}
+                        onChange={(e) => setEditingSession({...editingSession, notes: e.target.value})}
+                      />
+                    </div>
+                  </div>
+                  <div className="col-span-2">
+                    <button 
+                      type="submit" 
+                      className="w-full relative inline-flex items-center justify-center font-display tracking-wide transition-all duration-300 ease-in-out bg-primary/20 hover:bg-primary/30 text-white px-6 py-3 text-base gap-2 rounded-lg overflow-hidden group"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/20 to-primary/0 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                      <span className="relative flex items-center gap-2">
+                        Save Changes
+                      </span>
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
   </div>
   )
