@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Card } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { DollarSign, Clock, Calendar, MapPin, GamepadIcon, Pencil, Trash2, Filter, X } from 'lucide-react'
@@ -258,52 +258,68 @@ export default function HistoryPage() {
             )}
           </div>
 
-          {showFilters && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-              <div className="space-y-2">
-                <Label className="text-gray-400">Start Date</Label>
-                <Input
-                  type="date"
-                  value={filters.startDate}
-                  onChange={(e) => setFilters({...filters, startDate: e.target.value})}
-                  className="bg-black/40 border-gray-700 text-white"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-gray-400">Game Type</Label>
-                <Input
-                  type="text"
-                  placeholder="Filter by game type..."
-                  value={filters.gameType}
-                  onChange={(e) => setFilters({...filters, gameType: e.target.value})}
-                  className="bg-black/40 border-gray-700 text-white"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-gray-400">Location</Label>
-                <Input
-                  type="text"
-                  placeholder="Filter by location..."
-                  value={filters.location}
-                  onChange={(e) => setFilters({...filters, location: e.target.value})}
-                  className="bg-black/40 border-gray-700 text-white"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-gray-400">Profit/Loss</Label>
-                <select
-                  value={filters.profitLoss}
-                  onChange={(e) => setFilters({...filters, profitLoss: e.target.value})}
-                  className="w-full h-10 rounded-md border border-gray-700 bg-black/40 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+          <AnimatePresence>
+            {showFilters && (
+              <motion.div 
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="overflow-hidden"
+              >
+                <motion.div 
+                  initial={{ y: -20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: -20, opacity: 0 }}
+                  transition={{ duration: 0.3, delay: 0.1 }}
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6"
                 >
-                  <option value="">All</option>
-                  <option value="profit">Profit</option>
-                  <option value="loss">Loss</option>
-                  <option value="breakeven">Breakeven</option>
-                </select>
-              </div>
-            </div>
-          )}
+                  <div className="space-y-2">
+                    <Label className="text-gray-400">Start Date</Label>
+                    <Input
+                      type="date"
+                      value={filters.startDate}
+                      onChange={(e) => setFilters({...filters, startDate: e.target.value})}
+                      className="bg-black/40 border-gray-700 text-white"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-gray-400">Game Type</Label>
+                    <Input
+                      type="text"
+                      placeholder="Filter by game type..."
+                      value={filters.gameType}
+                      onChange={(e) => setFilters({...filters, gameType: e.target.value})}
+                      className="bg-black/40 border-gray-700 text-white"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-gray-400">Location</Label>
+                    <Input
+                      type="text"
+                      placeholder="Filter by location..."
+                      value={filters.location}
+                      onChange={(e) => setFilters({...filters, location: e.target.value})}
+                      className="bg-black/40 border-gray-700 text-white"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-gray-400">Profit/Loss</Label>
+                    <select
+                      value={filters.profitLoss}
+                      onChange={(e) => setFilters({...filters, profitLoss: e.target.value})}
+                      className="w-full h-10 rounded-md border border-gray-700 bg-black/40 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                    >
+                      <option value="">All</option>
+                      <option value="profit">Profit</option>
+                      <option value="loss">Loss</option>
+                      <option value="breakeven">Breakeven</option>
+                    </select>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <div className="mb-4 text-gray-400">
             Showing {filteredSessions.length} of {sessions.length} sessions
