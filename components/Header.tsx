@@ -1,46 +1,97 @@
+'use client'
+
 import Link from 'next/link'
 import Button from './ui/button'
-import dynamic from "next/dynamic";
-
-const GooeyNav = dynamic(() => import("./ui/GooeyNav"), { ssr: false });
+import Nav from './ui/Nav'
+import { useEffect, useState } from 'react'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { useRouter } from 'next/navigation'
 
 export default function Header() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [userEmail, setUserEmail] = useState<string | null>(null)
+  const supabase = createClientComponentClient()
+  const router = useRouter()
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setIsLoggedIn(!!user)
+      setUserEmail(user?.email || null)
+    }
+
+    checkUser()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLoggedIn(!!session?.user)
+      setUserEmail(session?.user?.email || null)
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [supabase.auth])
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.push('/auth')
+  }
+
   return (
     <header className="fixed top-5 left-0 right-0 z-50">
-      <div className="container mx-auto px-4 backdrop-blur-sm rounded-full p-2">
+      <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="text-white text-xl font-bold opacity-80">
             BKM
           </Link>
 
           <div className="absolute left-1/2 transform -translate-x-1/2">
-            <GooeyNav items={[
-              {
-                label: "Home",
-                href: "/",
-              },
-              {
-                label: "Dashboard",
-                href: "/dashboard",
-              },
-              {
-                label: "History",
-                href: "/history",
-              },
-              {
-                label: "About",
-                href: "/about",
-              },
-            ]} />
+            <Nav 
+              items={[
+                {
+                  label: "Home",
+                  href: "/"
+                },
+                {
+                  label: "Dashboard",
+                  href: "/dashboard"
+                },
+                {
+                  label: "History",
+                  href: "/history"
+                },
+                {
+                  label: "About",
+                  href: "/about"
+                }
+              ]} 
+            />
           </div>
 
           <div className="flex items-center gap-4">
-            <Link href="/auth">
-              <Button className='max-h-8' variant="secondary">Login</Button>
-            </Link>
-            <Link href="/auth?signup=true">
-              <Button className='max-h-8'  variant="outline">Sign Up</Button>
-            </Link>
+            {isLoggedIn ? (
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-gray-400">
+                  {userEmail}
+                </span>
+                <Button 
+                  onClick={handleSignOut}
+                  className='max-h-8' 
+                  variant="secondary"
+                >
+                  Sign Out
+                </Button>
+              </div>
+            ) : (
+              <>
+                <Link href="/auth">
+                  <Button className='max-h-8' variant="secondary">Login</Button>
+                </Link>
+                <Link href="/auth?signup=true">
+                  <Button className='max-h-8' variant="outline">Sign Up</Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>
