@@ -77,117 +77,51 @@ export default function DashboardPage() {
   const [newBankrollValue, setNewBankrollValue] = useState('')
   const supabase = createClientComponentClient()
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true)
-      try {
-        await Promise.all([
-          fetchSessions(),
-          fetchStats(),
-          fetchBankrollHistory()
-        ])
-      } catch (error) {
-        console.error('Error fetching data:', error)
-        toast.error('Error loading dashboard data')
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    fetchData()
-  }, [])
-
-  const fetchSessions = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    
-    if (!user) {
-      toast.error('You must be logged in to view your sessions')
-      return
-    }
-
-    const { data, error } = await supabase
-      .from('poker_sessions')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(10)
-
-    if (error) {
-      toast.error('Error loading sessions')
-      return
-    }
-
-    setSessions(data || [])
-  }
-
-  const fetchBankrollHistory = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    
-    if (!user) {
-      toast.error('You must be logged in to view your history')
-      return
-    }
-
-    // Get initial bankroll
-    const { data: statsData, error: statsError } = await supabase
-      .from('bankroll_stats')
-      .select('initial_bankroll')
-      .eq('user_id', user.id)
-      .single()
-
-    if (statsError) {
-      console.error('Error loading bankroll stats:', statsError)
-      toast.error('Error loading bankroll history')
-      return
-    }
-
-    const initialBankroll = statsData?.initial_bankroll || 0
-
-    const { data, error } = await supabase
-      .from('poker_sessions')
-      .select('created_at, cash_out, buy_in')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: true })
-
-    if (error) {
-      toast.error('Error loading history')
-      return
-    }
-
-    if (data) {
-      let runningTotal = initialBankroll
-      const history = data.map(session => {
-        const profit = session.cash_out - session.buy_in
-        runningTotal += profit
-        return {
-          date: new Date(session.created_at).toLocaleDateString(),
-          amount: runningTotal
-        }
-      })
-      setBankrollHistory(history)
-    }
-  }
-
-  const fetchStats = async () => {
+  const fetchData = async () => {
+    setIsLoading(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
       
       if (!user) {
-        toast.error('You must be logged in to view your statistics')
+        toast.error('You must be logged in to view your dashboard')
         return
       }
 
-      // Get all user sessions
-      const { data: sessions, error: sessionsError } = await supabase
-        .from('poker_sessions')
-        .select('*')
-        .eq('user_id', user.id)
+      // Fetch all data in parallel with a single query for sessions
+      const [sessionsResponse, statsResponse] = await Promise.all([
+        supabase
+          .from('poker_sessions')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('bankroll_stats')
+          .select('*')
+          .eq('user_id', user.id)
+          .single()
+      ])
 
-      if (sessionsError) {
-        console.error('Error loading sessions:', sessionsError)
-        toast.error('Error loading sessions')
-        return
+      if (sessionsResponse.error) {
+        throw new Error('Error loading sessions')
       }
+
+      const sessions = sessionsResponse.data || []
+      setSessions(sessions.slice(0, 10)) // Only keep last 10 sessions for display
+
+      // Calculate bankroll history
+      const initialBankroll = statsResponse.data?.initial_bankroll || 0
+      let runningTotal = initialBankroll
+      const history = sessions
+        .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+        .map(session => {
+          const profit = session.cash_out - session.buy_in
+          runningTotal += profit
+          return {
+            date: new Date(session.created_at).toLocaleDateString(),
+            amount: runningTotal
+          }
+        })
+      setBankrollHistory(history)
 
       // Calculate statistics
       const totalProfit = sessions.reduce((acc, session) => acc + (session.cash_out - session.buy_in), 0)
@@ -198,65 +132,32 @@ export default function DashboardPage() {
       const roi = totalBuyIn > 0 ? (totalProfit / totalBuyIn) * 100 : 0
       const winningPercentage = sessions.length > 0 ? (winningSessions / sessions.length) * 100 : 0
 
-      // Get or create stats
-      const { data: existingStats, error: fetchError } = await supabase
-        .from('bankroll_stats')
-        .select('*')
-        .eq('user_id', user.id)
-        .single()
-
-      if (fetchError) {
-        if (fetchError.code === 'PGRST116') {
-          // Create new entry with calculated stats
+      // Update or create stats
+      if (statsResponse.error) {
+        if (statsResponse.error.code === 'PGRST116') {
+          // Create new stats
           const { error: insertError } = await supabase
             .from('bankroll_stats')
             .insert([{
               user_id: user.id,
-              initial_bankroll: 0,
-              total_bankroll: totalProfit,
+              initial_bankroll: initialBankroll,
+              total_bankroll: initialBankroll + totalProfit,
               monthly_profit: totalProfit,
               hours_played: totalHours,
               win_rate: roi,
               winning_sessions_percentage: winningPercentage
             }])
 
-          if (insertError) {
-            console.error('Error creating statistics:', insertError)
-            toast.error('Error creating statistics')
-            return
-          }
-
-          // Get data after insertion
-          const { data: newData, error: newFetchError } = await supabase
-            .from('bankroll_stats')
-            .select('*')
-            .eq('user_id', user.id)
-            .single()
-
-          if (newFetchError) {
-            console.error('Error loading statistics:', newFetchError)
-            toast.error('Error loading statistics')
-            return
-          }
-
-          setStats(newData)
-          return
+          if (insertError) throw new Error('Error creating statistics')
         } else {
-          console.error('Error loading statistics:', fetchError)
-          toast.error('Error loading statistics')
-          return
+          throw new Error('Error loading statistics')
         }
-      }
-
-      if (existingStats) {
-        // Calculate new total bankroll based on initial bankroll and profit/loss
-        const newTotalBankroll = existingStats.initial_bankroll + totalProfit
-
+      } else {
         // Update existing stats
         const { error: updateError } = await supabase
           .from('bankroll_stats')
           .update({
-            total_bankroll: newTotalBankroll,
+            total_bankroll: statsResponse.data.initial_bankroll + totalProfit,
             monthly_profit: totalProfit,
             hours_played: totalHours,
             win_rate: roi,
@@ -264,32 +165,30 @@ export default function DashboardPage() {
           })
           .eq('user_id', user.id)
 
-        if (updateError) {
-          console.error('Error updating statistics:', updateError)
-          toast.error('Error updating statistics')
-          return
-        }
-
-        // Get updated stats
-        const { data: updatedStats, error: updatedError } = await supabase
-          .from('bankroll_stats')
-          .select('*')
-          .eq('user_id', user.id)
-          .single()
-
-        if (updatedError) {
-          console.error('Error loading updated statistics:', updatedError)
-          toast.error('Error loading statistics')
-          return
-        }
-
-        setStats(updatedStats)
+        if (updateError) throw new Error('Error updating statistics')
       }
+
+      // Get final stats
+      const { data: finalStats, error: finalError } = await supabase
+        .from('bankroll_stats')
+        .select('*')
+        .eq('user_id', user.id)
+        .single()
+
+      if (finalError) throw new Error('Error loading final statistics')
+      setStats(finalStats)
+
     } catch (error) {
       console.error('Error:', error)
-      toast.error('An error occurred while loading statistics')
+      toast.error(error instanceof Error ? error.message : 'An error occurred')
+    } finally {
+      setIsLoading(false)
     }
   }
+
+  useEffect(() => {
+    fetchData()
+  }, [])
 
   const handleBankrollUpdate = async () => {
     try {
@@ -306,69 +205,64 @@ export default function DashboardPage() {
         return
       }
 
-      // Get current stats with proper headers
-      const { data: currentStats, error: fetchError } = await supabase
-        .from('bankroll_stats')
-        .select('*')
-        .eq('user_id', user.id)
-        .single()
-        .throwOnError()
-
-      if (fetchError) {
-        console.error('Error fetching current stats:', fetchError)
-        toast.error('Error: Could not find current bankroll stats')
-        return
-      }
-
-      if (!currentStats) {
-        // Create new stats if none exist
-        const { error: insertError } = await supabase
+      // Get current stats and sessions in parallel
+      const [statsResponse, sessionsResponse] = await Promise.all([
+        supabase
           .from('bankroll_stats')
-          .insert([{
-            user_id: user.id,
-            initial_bankroll: newValue,
-            total_bankroll: newValue,
-            monthly_profit: 0,
-            hours_played: 0,
-            win_rate: 0,
-            winning_sessions_percentage: 0
-          }])
-          .throwOnError()
+          .select('*')
+          .eq('user_id', user.id)
+          .single(),
+        supabase
+          .from('poker_sessions')
+          .select('cash_out, buy_in')
+          .eq('user_id', user.id)
+      ])
 
-        if (insertError) {
-          console.error('Error creating bankroll stats:', insertError)
-          toast.error('Error creating bankroll stats')
-          return
+      if (sessionsResponse.error) throw new Error('Error loading sessions')
+
+      const totalProfit = sessionsResponse.data.reduce((acc, session) => 
+        acc + (session.cash_out - session.buy_in), 0)
+
+      if (statsResponse.error) {
+        if (statsResponse.error.code === 'PGRST116') {
+          // Create new stats
+          const { error: insertError } = await supabase
+            .from('bankroll_stats')
+            .insert([{
+              user_id: user.id,
+              initial_bankroll: newValue,
+              total_bankroll: newValue + totalProfit,
+              monthly_profit: totalProfit,
+              hours_played: 0,
+              win_rate: 0,
+              winning_sessions_percentage: 0
+            }])
+
+          if (insertError) throw new Error('Error creating bankroll stats')
+        } else {
+          throw new Error('Error loading bankroll stats')
         }
       } else {
-        // Calculate new total bankroll based on profit/loss
-        const profitLoss = currentStats.monthly_profit
-        const newTotalBankroll = newValue + profitLoss
-
+        // Update existing stats
         const { error: updateError } = await supabase
           .from('bankroll_stats')
           .update({ 
             initial_bankroll: newValue,
-            total_bankroll: newTotalBankroll,
+            total_bankroll: newValue + totalProfit,
             updated_at: new Date().toISOString()
           })
           .eq('user_id', user.id)
-          .throwOnError()
 
-        if (updateError) {
-          console.error('Error updating bankroll:', updateError)
-          toast.error('Error updating bankroll')
-          return
-        }
+        if (updateError) throw new Error('Error updating bankroll')
       }
 
       toast.success('Initial bankroll updated successfully')
       setIsEditingBankroll(false)
       setNewBankrollValue('')
-      fetchStats()
+      fetchData() // Refresh all data
     } catch (error) {
       console.error('Error:', error)
-      toast.error('An error occurred while updating bankroll')
+      toast.error(error instanceof Error ? error.message : 'An error occurred')
     }
   }
 
@@ -400,55 +294,62 @@ export default function DashboardPage() {
       }
 
       const profit = parseFloat(newSession.cash_out) - parseFloat(newSession.buy_in)
-      const roi = (profit / parseFloat(newSession.buy_in)) * 100
 
-      // Insert session
-      const { error: sessionError } = await supabase
-        .from('poker_sessions')
-        .insert([{
-          user_id: user.id,
-          buy_in: parseFloat(newSession.buy_in),
-          cash_out: parseFloat(newSession.cash_out),
-          duration: parseFloat(newSession.duration),
-          notes: newSession.notes,
-          game_type: newSession.game_type,
-          location: newSession.location,
-          blinds: newSession.blinds,
-          created_at: newSession.date
-        }])
+      // Insert session and update stats in parallel
+      const [sessionResponse, statsResponse] = await Promise.all([
+        supabase
+          .from('poker_sessions')
+          .insert([{
+            user_id: user.id,
+            buy_in: parseFloat(newSession.buy_in),
+            cash_out: parseFloat(newSession.cash_out),
+            duration: parseFloat(newSession.duration),
+            notes: newSession.notes,
+            game_type: newSession.game_type,
+            location: newSession.location,
+            blinds: newSession.blinds,
+            created_at: newSession.date
+          }]),
+        supabase
+          .from('bankroll_stats')
+          .select('*')
+          .eq('user_id', user.id)
+          .single()
+      ])
 
-      if (sessionError) {
-        console.error('Supabase error:', sessionError)
-        toast.error('Error adding session: ' + sessionError.message)
-        return
-      }
+      if (sessionResponse.error) throw new Error('Error adding session')
 
-      // Update stats
-      const { data: currentStats } = await supabase
-        .from('bankroll_stats')
-        .select('*')
-        .eq('user_id', user.id)
-        .single()
+      if (statsResponse.error) {
+        if (statsResponse.error.code === 'PGRST116') {
+          // Create new stats
+          const { error: insertError } = await supabase
+            .from('bankroll_stats')
+            .insert([{
+              user_id: user.id,
+              initial_bankroll: 0,
+              total_bankroll: profit,
+              monthly_profit: profit,
+              hours_played: parseFloat(newSession.duration),
+              win_rate: 0,
+              winning_sessions_percentage: 0
+            }])
 
-      if (currentStats) {
-        const newMonthlyProfit = currentStats.monthly_profit + profit
-        const newHoursPlayed = currentStats.hours_played + parseFloat(newSession.duration)
-        const newTotalBankroll = currentStats.initial_bankroll + newMonthlyProfit
-        
-        const { error: statsError } = await supabase
+          if (insertError) throw new Error('Error creating statistics')
+        } else {
+          throw new Error('Error loading statistics')
+        }
+      } else {
+        // Update existing stats
+        const { error: updateError } = await supabase
           .from('bankroll_stats')
           .update({
-            total_bankroll: newTotalBankroll,
-            monthly_profit: newMonthlyProfit,
-            hours_played: newHoursPlayed
+            total_bankroll: statsResponse.data.initial_bankroll + statsResponse.data.monthly_profit + profit,
+            monthly_profit: statsResponse.data.monthly_profit + profit,
+            hours_played: statsResponse.data.hours_played + parseFloat(newSession.duration)
           })
           .eq('user_id', user.id)
 
-        if (statsError) {
-          console.error('Error updating stats:', statsError)
-          toast.error('Error updating statistics')
-          return
-        }
+        if (updateError) throw new Error('Error updating statistics')
       }
 
       toast.success('Session added successfully')
@@ -462,12 +363,10 @@ export default function DashboardPage() {
         blinds: '',
         date: new Date().toISOString().split('T')[0]
       })
-      fetchSessions()
-      fetchStats()
-      fetchBankrollHistory()
+      fetchData() // Refresh all data
     } catch (error) {
       console.error('Error:', error)
-      toast.error('An error occurred while adding the session')
+      toast.error(error instanceof Error ? error.message : 'An error occurred')
     }
   }
 
