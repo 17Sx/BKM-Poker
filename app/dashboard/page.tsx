@@ -53,6 +53,7 @@ export default function DashboardPage() {
   const [sessions, setSessions] = useState<Session[]>([])
   const [bankrollHistory, setBankrollHistory] = useState<BankrollHistory[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isModalOpen, setIsModalOpen] = useState(false)
   const [stats, setStats] = useState<BankrollStats>({
     id: '',
     user_id: '',
@@ -190,7 +191,12 @@ export default function DashboardPage() {
     fetchData()
   }, [])
 
-  const handleBankrollUpdate = async () => {
+  const handleBankrollUpdate = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
     try {
       const { data: { user } } = await supabase.auth.getUser()
       
@@ -208,9 +214,9 @@ export default function DashboardPage() {
       // Get current stats and sessions in parallel
       const [statsResponse, sessionsResponse] = await Promise.all([
         supabase
-          .from('bankroll_stats')
-          .select('*')
-          .eq('user_id', user.id)
+        .from('bankroll_stats')
+        .select('*')
+        .eq('user_id', user.id)
           .single(),
         supabase
           .from('poker_sessions')
@@ -245,13 +251,13 @@ export default function DashboardPage() {
       } else {
         // Update existing stats
         const { error: updateError } = await supabase
-          .from('bankroll_stats')
-          .update({ 
-            initial_bankroll: newValue,
+        .from('bankroll_stats')
+        .update({ 
+          initial_bankroll: newValue,
             total_bankroll: newValue + totalProfit,
-            updated_at: new Date().toISOString()
-          })
-          .eq('user_id', user.id)
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id)
 
         if (updateError) throw new Error('Error updating bankroll')
       }
@@ -392,43 +398,51 @@ export default function DashboardPage() {
               <div>
                 <p className="text-sm text-gray-400">Initial Bankroll</p>
                 {isEditingBankroll ? (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 relative z-10">
                     <Input
                       type="number"
                       value={newBankrollValue}
                       onChange={(e) => setNewBankrollValue(e.target.value)}
-                      className="w-32 bg-black/40 border-gray-700 text-white focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      className="w-24 bg-black/40 border-gray-700 text-white focus:ring-2 focus:ring-primary focus:border-primary text-sm"
                       placeholder={stats.initial_bankroll.toString()}
                       autoFocus
                     />
-                    <Button
-                      onClick={handleBankrollUpdate}
-                      className="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded"
+                    <button
+                      type="button"
+                      onClick={(e) => handleBankrollUpdate(e)}
+                      className="p-1.5 bg-primary/20 hover:bg-primary/30 text-white rounded-md transition-all duration-200 cursor-pointer"
                     >
-                      ✓
-                    </Button>
-                    <Button
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => {
                         setIsEditingBankroll(false)
                         setNewBankrollValue('')
                       }}
-                      className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded"
+                      className="p-1.5 bg-red-500/20 hover:bg-red-500/30 text-white rounded-md transition-all duration-200 cursor-pointer"
                     >
-                      ✕
-                    </Button>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 relative z-10">
                     <h3 className="text-2xl font-bold text-white">${stats.initial_bankroll.toFixed(2)}</h3>
-                    <Button
+                    <button
                       onClick={() => {
                         setIsEditingBankroll(true)
                         setNewBankrollValue(stats.initial_bankroll.toString())
                       }}
-                      className="p-1 bg-black/40 hover:bg-black/60 text-white rounded"
+                      className="p-1.5 bg-black/40 hover:bg-black/60 text-white rounded-md transition-all duration-200 opacity-50 hover:opacity-100 cursor-pointer"
                     >
-                      ✎
-                    </Button>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                      </svg>
+                    </button>
                   </div>
                 )}
               </div>
@@ -460,7 +474,20 @@ export default function DashboardPage() {
         {/* Bankroll Chart */}
         <Card className="bg-black/20 backdrop-blur-sm border-none mb-8">
           <div className="p-6">
-            <h2 className="text-2xl font-bold text-white mb-4">Bankroll Evolution</h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold text-white">Bankroll Evolution</h2>
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="relative inline-flex items-center justify-center font-display tracking-wide transition-all duration-300 ease-in-out bg-primary/20 hover:bg-primary/30 text-white px-4 py-2 text-sm gap-2 rounded-lg overflow-hidden group"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/20 to-primary/0 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                <span className="relative flex items-center gap-2">
+                  <Plus className="w-4 h-4" />
+                  New Session
+                </span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+              </button>
+            </div>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={bankrollHistory}>
@@ -488,11 +515,149 @@ export default function DashboardPage() {
           </div>
         </Card>
 
+        {/* Modal */}
+        {isModalOpen && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-black/90 border border-white/10 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-bold text-white">New Session</h2>
+                  <button
+                    onClick={() => setIsModalOpen(false)}
+                    className="text-gray-400 hover:text-white transition-colors duration-200"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                <form onSubmit={(e) => {
+                  handleSessionSubmit(e);
+                  setIsModalOpen(false);
+                }} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div className="group">
+                      <Label htmlFor="date" className="text-gray-400 group-hover:text-white transition-colors duration-200">Date *</Label>
+                      <Input 
+                        id="date" 
+                        type="date" 
+                        className="bg-black/40 border-gray-700 text-white hover:border-primary/50 focus:border-primary transition-all duration-200"
+                        value={newSession.date}
+                        onChange={(e) => setNewSession({...newSession, date: e.target.value})}
+                        required
+                      />
+                    </div>
+                    <div className="group">
+                      <Label htmlFor="game_type" className="text-gray-400 group-hover:text-white transition-colors duration-200">Game Type *</Label>
+                      <Input 
+                        id="game_type" 
+                        className="bg-black/40 border-gray-700 text-white hover:border-primary/50 focus:border-primary transition-all duration-200"
+                        value={newSession.game_type}
+                        onChange={(e) => setNewSession({...newSession, game_type: e.target.value})}
+                        placeholder="ex: NL Hold'em, PLO, etc."
+                        required
+                      />
+                    </div>
+                    <div className="group">
+                      <Label htmlFor="blinds" className="text-gray-400 group-hover:text-white transition-colors duration-200">Blinds *</Label>
+                      <Input 
+                        id="blinds" 
+                        className="bg-black/40 border-gray-700 text-white hover:border-primary/50 focus:border-primary transition-all duration-200"
+                        value={newSession.blinds}
+                        onChange={(e) => setNewSession({...newSession, blinds: e.target.value})}
+                        placeholder="ex: 1/2, 2/5, etc."
+                        required
+                      />
+                    </div>
+                    <div className="group">
+                      <Label htmlFor="location" className="text-gray-400 group-hover:text-white transition-colors duration-200">Location *</Label>
+                      <Input 
+                        id="location" 
+                        className="bg-black/40 border-gray-700 text-white hover:border-primary/50 focus:border-primary transition-all duration-200"
+                        value={newSession.location}
+                        onChange={(e) => setNewSession({...newSession, location: e.target.value})}
+                        placeholder="ex: Casino, Online, etc."
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="group">
+                      <Label htmlFor="buyin" className="text-gray-400 group-hover:text-white transition-colors duration-200">Buy-in *</Label>
+                      <Input 
+                        id="buyin" 
+                        type="number" 
+                        min="0"
+                        step="0.01"
+                        className="bg-black/40 border-gray-700 text-white hover:border-primary/50 focus:border-primary transition-all duration-200"
+                        value={newSession.buy_in}
+                        onChange={(e) => setNewSession({...newSession, buy_in: e.target.value})}
+                        required
+                      />
+                    </div>
+                    <div className="group">
+                      <Label htmlFor="cashout" className="text-gray-400 group-hover:text-white transition-colors duration-200">Cash-out *</Label>
+                      <Input 
+                        id="cashout" 
+                        type="number" 
+                        min="0"
+                        step="0.01"
+                        className="bg-black/40 border-gray-700 text-white hover:border-primary/50 focus:border-primary transition-all duration-200"
+                        value={newSession.cash_out}
+                        onChange={(e) => setNewSession({...newSession, cash_out: e.target.value})}
+                        required
+                      />
+                    </div>
+                    <div className="group">
+                      <Label htmlFor="duration" className="text-gray-400 group-hover:text-white transition-colors duration-200">Duration (hours) *</Label>
+                      <Input 
+                        id="duration" 
+                        type="number" 
+                        min="0"
+                        step="0.5"
+                        className="bg-black/40 border-gray-700 text-white hover:border-primary/50 focus:border-primary transition-all duration-200"
+                        value={newSession.duration}
+                        onChange={(e) => setNewSession({...newSession, duration: e.target.value})}
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="col-span-2">
+                    <div className="group">
+                      <Label htmlFor="notes" className="text-gray-400 group-hover:text-white transition-colors duration-200">Notes</Label>
+                      <Input 
+                        id="notes" 
+                        className="bg-black/40 border-gray-700 text-white hover:border-primary/50 focus:border-primary transition-all duration-200"
+                        value={newSession.notes}
+                        onChange={(e) => setNewSession({...newSession, notes: e.target.value})}
+                        placeholder="Notes about the session, opponents, etc."
+                      />
+                    </div>
+                  </div>
+                  <div className="col-span-2">
+                    <button 
+                      type="submit" 
+                      className="w-full relative inline-flex items-center justify-center font-display tracking-wide transition-all duration-300 ease-in-out bg-primary/20 hover:bg-primary/30 text-white px-6 py-3 text-base gap-2 rounded-lg overflow-hidden group"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/20 to-primary/0 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                      <span className="relative flex items-center gap-2">
+                        <Plus className="w-4 h-4" />
+                        Add Session
+                      </span>
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Main Content */}
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList className="bg-black/20 backdrop-blur-sm">
             <TabsTrigger className='text-white data-[state=active]:text-white data-[state=active]:bg-white' value="overview">Overview</TabsTrigger>
-            <TabsTrigger className='text-white data-[state=active]:text-white data-[state=active]:bg-white' value="sessions">Sessions</TabsTrigger>
             <TabsTrigger className='text-white data-[state=active]:text-white data-[state=active]:bg-white' value="stats">Statistics</TabsTrigger>
           </TabsList>
 
@@ -534,118 +699,7 @@ export default function DashboardPage() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="sessions">
-            <Card className="bg-black/20 backdrop-blur-sm border-none">
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-bold text-white">New Session</h2>
-                </div>
-
-                <form onSubmit={handleSessionSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="date" className="text-gray-400">Date *</Label>
-                      <Input 
-                        id="date" 
-                        type="date" 
-                        className="bg-black/40 border-gray-700 text-white"
-                        value={newSession.date}
-                        onChange={(e) => setNewSession({...newSession, date: e.target.value})}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="game_type" className="text-gray-400">Game Type *</Label>
-                      <Input 
-                        id="game_type" 
-                        className="bg-black/40 border-gray-700 text-white"
-                        value={newSession.game_type}
-                        onChange={(e) => setNewSession({...newSession, game_type: e.target.value})}
-                        placeholder="ex: NL Hold'em, PLO, etc."
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="blinds" className="text-gray-400">Blinds *</Label>
-                      <Input 
-                        id="blinds" 
-                        className="bg-black/40 border-gray-700 text-white"
-                        value={newSession.blinds}
-                        onChange={(e) => setNewSession({...newSession, blinds: e.target.value})}
-                        placeholder="ex: 1/2, 2/5, etc."
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="buyin" className="text-gray-400">Buy-in *</Label>
-                      <Input 
-                        id="buyin" 
-                        type="number" 
-                        min="0"
-                        step="0.01"
-                        className="bg-black/40 border-gray-700 text-white"
-                        value={newSession.buy_in}
-                        onChange={(e) => setNewSession({...newSession, buy_in: e.target.value})}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="cashout" className="text-gray-400">Cash-out *</Label>
-                      <Input 
-                        id="cashout" 
-                        type="number" 
-                        min="0"
-                        step="0.01"
-                        className="bg-black/40 border-gray-700 text-white"
-                        value={newSession.cash_out}
-                        onChange={(e) => setNewSession({...newSession, cash_out: e.target.value})}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="duration" className="text-gray-400">Duration (hours) *</Label>
-                      <Input 
-                        id="duration" 
-                        type="number" 
-                        min="0"
-                        step="0.5"
-                        className="bg-black/40 border-gray-700 text-white"
-                        value={newSession.duration}
-                        onChange={(e) => setNewSession({...newSession, duration: e.target.value})}
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="col-span-2">
-                    <div>
-                      <Label htmlFor="notes" className="text-gray-400">Notes</Label>
-                      <Input 
-                        id="notes" 
-                        className="bg-black/40 border-gray-700 text-white"
-                        value={newSession.notes}
-                        onChange={(e) => setNewSession({...newSession, notes: e.target.value})}
-                        placeholder="Notes about the session, opponents, etc."
-                      />
-                    </div>
-                  </div>
-                  <div className="col-span-2">
-                    <button 
-                      type="submit" 
-                      className="w-full relative inline-flex items-center justify-center font-display tracking-wide transition-all duration-300 ease-in-out bg-primary text-primary-foreground hover:bg-primary-dark px-6 py-3 text-base gap-2 rounded-lg overflow-hidden"
-                    >
-                      <span className="flex items-center gap-2">
-                        <Plus className="w-4 h-4" />
-                        Add Session
-                      </span>
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </Card>
-          </TabsContent>
-
+          
           <TabsContent value="stats">
             <Card className="bg-black/20 backdrop-blur-sm border-none">
               <div className="p-6">

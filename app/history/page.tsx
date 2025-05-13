@@ -91,14 +91,14 @@ export default function HistoryPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Game Type</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Buy In</TableHead>
-                <TableHead>Cash Out</TableHead>
-                <TableHead>Profit/Loss</TableHead>
-                <TableHead>Duration</TableHead>
-                <TableHead>ROI</TableHead>
+                <TableHead className="text-white">Date</TableHead>
+                <TableHead className="text-white">Game Type</TableHead>
+                <TableHead className="text-white">Location</TableHead>
+                <TableHead className="text-white">Buy In</TableHead>
+                <TableHead className="text-white">Cash Out</TableHead>
+                <TableHead className="text-white">Profit/Loss</TableHead>
+                <TableHead className="text-white">Duration</TableHead>
+                <TableHead className="text-white">ROI</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -108,31 +108,31 @@ export default function HistoryPage() {
                 
                 return (
                   <TableRow key={session.id}>
-                    <TableCell>
+                    <TableCell className="text-white">
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4" />
                         {new Date(session.created_at).toLocaleDateString()}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-white">
                       <div className="flex items-center gap-2">
                         <GamepadIcon className="w-4 h-4" />
                         {session.game_type || 'N/A'}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-white">
                       <div className="flex items-center gap-2">
                         <MapPin className="w-4 h-4" />
                         {session.location || 'N/A'}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-white">
                       <div className="flex items-center gap-2">
                         <DollarSign className="w-4 h-4" />
                         {session.buy_in.toFixed(2)}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-white">
                       <div className="flex items-center gap-2">
                         <DollarSign className="w-4 h-4" />
                         {session.cash_out.toFixed(2)}
@@ -145,7 +145,7 @@ export default function HistoryPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 text-white">
                         <Clock className="w-4 h-4" />
                         {session.duration}h
                       </div>
