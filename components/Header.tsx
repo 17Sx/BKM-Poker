@@ -73,7 +73,7 @@ export default function Header() {
                 },
                 {
                   label: "About",
-                  href: "/about"
+                  href: "/aboutus"
                 }
               ]} 
             />
