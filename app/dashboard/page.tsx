@@ -306,35 +306,60 @@ export default function DashboardPage() {
         return
       }
 
-      // Get current stats
-      const { data: currentStats } = await supabase
+      // Get current stats with proper headers
+      const { data: currentStats, error: fetchError } = await supabase
         .from('bankroll_stats')
         .select('*')
         .eq('user_id', user.id)
         .single()
+        .throwOnError()
 
-      if (!currentStats) {
+      if (fetchError) {
+        console.error('Error fetching current stats:', fetchError)
         toast.error('Error: Could not find current bankroll stats')
         return
       }
 
-      // Calculate new total bankroll based on profit/loss
-      const profitLoss = currentStats.monthly_profit
-      const newTotalBankroll = newValue + profitLoss
+      if (!currentStats) {
+        // Create new stats if none exist
+        const { error: insertError } = await supabase
+          .from('bankroll_stats')
+          .insert([{
+            user_id: user.id,
+            initial_bankroll: newValue,
+            total_bankroll: newValue,
+            monthly_profit: 0,
+            hours_played: 0,
+            win_rate: 0,
+            winning_sessions_percentage: 0
+          }])
+          .throwOnError()
 
-      const { error } = await supabase
-        .from('bankroll_stats')
-        .update({ 
-          initial_bankroll: newValue,
-          total_bankroll: newTotalBankroll,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id)
+        if (insertError) {
+          console.error('Error creating bankroll stats:', insertError)
+          toast.error('Error creating bankroll stats')
+          return
+        }
+      } else {
+        // Calculate new total bankroll based on profit/loss
+        const profitLoss = currentStats.monthly_profit
+        const newTotalBankroll = newValue + profitLoss
 
-      if (error) {
-        console.error('Error updating bankroll:', error)
-        toast.error('Error updating bankroll: ' + error.message)
-        return
+        const { error: updateError } = await supabase
+          .from('bankroll_stats')
+          .update({ 
+            initial_bankroll: newValue,
+            total_bankroll: newTotalBankroll,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id)
+          .throwOnError()
+
+        if (updateError) {
+          console.error('Error updating bankroll:', updateError)
+          toast.error('Error updating bankroll')
+          return
+        }
       }
 
       toast.success('Initial bankroll updated successfully')
