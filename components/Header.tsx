@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation'
 export default function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [userEmail, setUserEmail] = useState<string | null>(null)
+  const [isScrolled, setIsScrolled] = useState(false)
   const supabase = createClientComponentClient()
   const router = useRouter()
 
@@ -32,6 +33,16 @@ export default function Header() {
     }
   }, [supabase.auth])
 
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY
+      setIsScrolled(scrollPosition > 50)
+    }
+
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
   const handleSignOut = async () => {
     await supabase.auth.signOut()
     router.push('/auth')
@@ -41,11 +52,11 @@ export default function Header() {
     <header className="fixed top-5 left-0 right-0 z-50">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          <Link href="/" className="text-white text-xl font-bold opacity-80">
+          <Link href="/" className="text-white text-xl font-bold opacity-80 hover:opacity-10 transition-all duration-200">
             BKM
           </Link>
 
-          <div className="absolute left-1/2 transform -translate-x-1/2">
+          <div className={`absolute left-1/2 transform -translate-x-1/2 transition-all duration-300 ${isScrolled ? 'scale-90' : 'scale-100'}`}>
             <Nav 
               items={[
                 {

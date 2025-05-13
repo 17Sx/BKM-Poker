@@ -15,6 +15,8 @@ import { HoverBorderGradient } from '@/components/ui/hover-border-gradient'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { toast } from 'sonner'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import Loading from '@/components/ui/loading'
+
 
 interface Session {
   id: string
@@ -50,6 +52,7 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState('overview')
   const [sessions, setSessions] = useState<Session[]>([])
   const [bankrollHistory, setBankrollHistory] = useState<BankrollHistory[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [stats, setStats] = useState<BankrollStats>({
     id: '',
     user_id: '',
@@ -75,9 +78,23 @@ export default function DashboardPage() {
   const supabase = createClientComponentClient()
 
   useEffect(() => {
-    fetchSessions()
-    fetchStats()
-    fetchBankrollHistory()
+    const fetchData = async () => {
+      setIsLoading(true)
+      try {
+        await Promise.all([
+          fetchSessions(),
+          fetchStats(),
+          fetchBankrollHistory()
+        ])
+      } catch (error) {
+        console.error('Error fetching data:', error)
+        toast.error('Error loading dashboard data')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchData()
   }, [])
 
   const fetchSessions = async () => {
@@ -432,7 +449,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-background relative">
     <Header />
-
+    {isLoading && <Loading />}
       <main className="container mx-auto px-4 py-24 mt-20">
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">

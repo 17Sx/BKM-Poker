@@ -5,12 +5,16 @@ import { HoverBorderGradient } from "@/components/ui/hover-border-gradient";
 import { ArrowRight } from "lucide-react";
 import { useState, useEffect } from "react";
 import Header from "@/components/Header";
+import Link from "next/link";
 
 const Waves = dynamic(() => import("@/components/ui/Waves"), { ssr: false });
 const Footer = dynamic(() => import("@/components/Footer"), { ssr: false });
 
 const pokerColors = [
-  "#000000", 
+  "#000000",
+  "#1a1a1a",
+  "#262626", 
+  "#333333",
 ]
 
 export default function Home() {
@@ -34,7 +38,7 @@ export default function Home() {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, [isHovering]);
 
-  // Assigne une couleur de poker à chaque index
+
   const getPokerColor = (index: number) => {
     return pokerColors[index % pokerColors.length];
   };
@@ -116,26 +120,26 @@ export default function Home() {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 mt-12">
-            <HoverBorderGradient
-              as="button"
-              href="/auth"
-              containerClassName="bg-primary/20"
-              className="bg-primary text-white opacity-70"
-            >
-              <span className="flex items-center gap-2">
-                Let&apos;s start
-                <ArrowRight className="w-4 h-4" />
-              </span>
-            </HoverBorderGradient>
+            <Link href="/auth">
+              <HoverBorderGradient
+                containerClassName="bg-primary/20"
+                className="bg-primary text-white opacity-70"
+              >
+                <span className="flex items-center gap-2">
+                  Let&apos;s start
+                  <ArrowRight className="w-4 h-4" />
+                </span>
+              </HoverBorderGradient>
+            </Link>
             
-            <HoverBorderGradient
-              as="button"
-              href="/about"
-              containerClassName="bg-white/20"
-              className="bg-transparent text-white opacity-70"
-            >
-              Learn more
-            </HoverBorderGradient>
+            <Link href="/about">
+              <HoverBorderGradient
+                containerClassName="bg-white/20"
+                className="bg-transparent text-white opacity-70"
+              >
+                Learn more
+              </HoverBorderGradient>
+            </Link>
           </div>
         </div>
       </main>
