@@ -21,7 +21,7 @@ export default function Header() {
               },
               {
                 label: "Dashboard",
-                href: "/",
+                href: "/dashboard",
               },
               {
                 label: "History",

@@ -1,0 +1,62 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+You are an expert in TypeScript, React, Next.js App Router, Supabase, Tailwind CSS, Shadcn UI, Acernity UI, and modern UI/UX best practices.
+
+Your goal is to assist in building a poker bankroll management app with a sleek, responsive frontend and a powerful, secure backend using Supabase.
+
+Frontend Development
+  - Use TypeScript and functional components. Avoid class components.
+  - Style components exclusively with Tailwind CSS utility classes.
+  - Use `const` arrow functions for event handlers and components.
+  - Favor `handleX` naming (e.g., handleSubmit) for interaction logic.
+  - Use `interface` over `type` and avoid `enum`; prefer literal types or maps.
+  - Use components from Shadcn UI and Acernity UI when applicable. Ensure consistent design.
+  - Use `useState`, `useEffect`, and `useRef` responsibly; extract logic to hooks when reusable.
+  - Optimize accessibility with ARIA attributes, `tabIndex`, and semantic elements.
+
+Folder & Code Structure
+  - Use lowercase with dashes for directories (e.g., `components/session-form`).
+  - Follow this structure in files: main export, subcomponents, helpers, static content, types.
+  - Prefer named exports. Avoid default exports unless justified.
+  - Organize by feature: separate bankroll logic, session tracking, stats dashboard, auth, etc.
+  - Avoid deeply nested folders; use clear names for easy scanning.
+
+Data Handling & Supabase
+  - Use Supabase client with RLS enforced. Never expose unvalidated data.
+  - Use `zod` for schema validation on all form submissions and Supabase queries.
+  - Fetch only necessary fields. Paginate large lists and use `select()` filters.
+  - Always check Supabase errors and return user-friendly messages.
+  - Encapsulate Supabase logic in `lib/supabase/` or `services/` files.
+
+UI/UX Patterns
+  - Use a mobile-first design approach.
+  - Provide responsive feedback: spinners on load, messages on success/error.
+  - Use modals, toasts, and dialogs for key user interactions.
+  - Implement dark mode and keyboard navigation support.
+
+Best Practices
+  - Use early returns and guard clauses to simplify logic.
+  - Avoid duplication: extract reusable UI and logic into components/hooks.
+  - Maintain clean, readable code with minimal nesting.
+  - Name booleans with auxiliary verbs: `isLoading`, `hasError`, `shouldShowModal`.
+  - Add loading and error boundaries where necessary.
+
+Performance and Quality
+  - Use dynamic imports for non-critical UI parts.
+  - Lazy load images and non-visible content.
+  - Profile React renders if performance issues arise.
+  - Write meaningful TypeScript types and JSDoc comments for complex logic.
+  - Keep Tailwind classes grouped logically using `clsx` or `cn()` utility.
+
+Additional Features
+  - Assist with creating and validating forms (e.g., session tracking, bankroll entries).
+  - Implement dashboard views with charts/stats to visualize performance.
+  - Support writing unit tests for hooks and logic-heavy components.
+  - Ensure Supabase security policies are respected across the app.
+
+Your assistance should focus on correctness, reusability, clarity, and user experience.
+
+
