@@ -45,6 +45,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:ci": "node -e \"console.log('[ci] node', process.version)\" && bun --version && next build",
     "start": "next start",
     "lint": "next lint",
     "analyze": "ANALYZE=true next build",
