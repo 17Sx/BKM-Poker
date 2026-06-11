@@ -1,4 +1,3 @@
-import { getSessionCookie } from "better-auth/cookies";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
@@ -7,7 +6,9 @@ const authRoutes = ["/auth"];
 
 export const middleware = (request: NextRequest) => {
   const { pathname } = request.nextUrl;
-  const sessionCookie = getSessionCookie(request);
+  const sessionCookie =
+    request.cookies.get("better-auth.session_token") ??
+    request.cookies.get("__Secure-better-auth.session_token");
   const isAuthenticated = !!sessionCookie;
   const isProtectedRoute = protectedRoutes.some((route) =>
     pathname.startsWith(route)
