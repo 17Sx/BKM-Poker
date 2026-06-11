@@ -104,10 +104,10 @@ export default function AboutPage() {
           <div className="relative z-10 space-y-6 p-8">
             <h2 className="font-bold text-3xl text-white">Our Mission</h2>
             <p className="text-lg text-white/80">
-              We're building the future of poker bankroll management, one hand
-              at a time. Our goal is to provide poker players with the tools
-              they need to make smarter financial decisions and improve their
-              game.
+              We&apos;re building the future of poker bankroll management, one
+              hand at a time. Our goal is to provide poker players with the
+              tools they need to make smarter financial decisions and improve
+              their game.
             </p>
             <p className="text-lg text-white/80">
               We are currently in beta and would love to hear from you. Your
@@ -191,8 +191,8 @@ export default function AboutPage() {
             </span>
           </h2>
           <p className="mx-auto mb-8 max-w-2xl text-gray-400">
-            Have questions or suggestions? We'd love to hear from you. Reach out
-            and let's make poker better together.
+            Have questions or suggestions? We&apos;d love to hear from you.
+            Reach out and let&apos;s make poker better together.
           </p>
           <div className="flex flex-col justify-center gap-4 sm:flex-row">
             <Link href="mailto:contact@bkmpoker.com">

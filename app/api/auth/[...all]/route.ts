@@ -1,22 +1,11 @@
 import { toNextJsHandler } from "better-auth/next-js";
+import type { NextRequest } from "next/server";
 import { getAuth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-type AuthHandlers = ReturnType<typeof toNextJsHandler>;
+const getHandlers = () => toNextJsHandler(getAuth());
 
-let handlers: AuthHandlers | undefined;
+export const GET = (request: NextRequest) => getHandlers().GET(request);
 
-const getHandlers = (): AuthHandlers => {
-  if (!handlers) {
-    handlers = toNextJsHandler(getAuth());
-  }
-
-  return handlers;
-};
-
-export const GET = (...args: Parameters<AuthHandlers["GET"]>) =>
-  getHandlers().GET(...args);
-
-export const POST = (...args: Parameters<AuthHandlers["POST"]>) =>
-  getHandlers().POST(...args);
+export const POST = (request: NextRequest) => getHandlers().POST(request);

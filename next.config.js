@@ -19,7 +19,6 @@ const nextConfig = {
     };
     return config;
   },
-  output: "standalone",
   poweredByHeader: false,
 };
 
