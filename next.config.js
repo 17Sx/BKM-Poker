@@ -7,10 +7,10 @@ const nextConfig = {
   },
   experimental: {
     optimizeCss: true,
-    optimizePackageImports: ['framer-motion', 'lucide-react'],
+    optimizePackageImports: ["framer-motion", "lucide-react"],
   },
   compiler: {
-    removeConsole: process.env.NODE_ENV === 'production',
+    removeConsole: process.env.NODE_ENV === "production",
   },
   webpack: (config) => {
     config.resolve.fallback = {
@@ -19,8 +19,8 @@ const nextConfig = {
     };
     return config;
   },
-  output: 'standalone',
+  output: "standalone",
   poweredByHeader: false,
-}
+};
 
-module.exports = nextConfig 
+module.exports = nextConfig;

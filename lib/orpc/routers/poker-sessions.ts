@@ -1,9 +1,11 @@
 import { ORPCError } from "@orpc/server";
+import { z } from "zod";
 import { authed } from "@/lib/orpc/procedures";
 import {
   createPokerSessionSchema,
   updatePokerSessionSchema,
 } from "@/lib/validations/poker-session";
+import { recalculateAndUpsertStats } from "@/services/bankroll-stats";
 import {
   createSession,
   deleteSession,
@@ -11,8 +13,6 @@ import {
   getSessionsByUserId,
   updateSession,
 } from "@/services/poker-sessions";
-import { recalculateAndUpsertStats } from "@/services/bankroll-stats";
-import { z } from "zod";
 
 export const pokerSessionsRouter = {
   list: authed.handler(async ({ context }) => {

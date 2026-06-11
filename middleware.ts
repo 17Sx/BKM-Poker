@@ -1,15 +1,17 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
 const protectedRoutes = ["/dashboard", "/history"];
 const authRoutes = ["/auth"];
 
-export const middleware = async (request: NextRequest) => {
+export const middleware = (request: NextRequest) => {
   const { pathname } = request.nextUrl;
   const sessionCookie = getSessionCookie(request);
   const isAuthenticated = !!sessionCookie;
-  const isProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route));
+  const isProtectedRoute = protectedRoutes.some((route) =>
+    pathname.startsWith(route)
+  );
   const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route));
 
   if (isAuthRoute && isAuthenticated) {
@@ -24,7 +26,5 @@ export const middleware = async (request: NextRequest) => {
 };
 
 export const config = {
-  matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|api).*)",
-  ],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|api).*)"],
 };

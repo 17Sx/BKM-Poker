@@ -1,15 +1,15 @@
-import type { PokerSession, BankrollHistory } from "@/types/poker";
+import type { BankrollHistory, PokerSession } from "@/types/poker";
 
 interface SessionRow {
-  id: string;
+  blinds: string | null;
   buyIn: string;
   cashOut: string;
-  duration: string;
-  notes: string | null;
   createdAt: Date;
+  duration: string;
   gameType: string | null;
+  id: string;
   location: string | null;
-  blinds: string | null;
+  notes: string | null;
 }
 
 export const toPokerSession = (row: SessionRow): PokerSession => {

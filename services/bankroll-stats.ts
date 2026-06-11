@@ -1,12 +1,12 @@
 import { eq } from "drizzle-orm";
-import { db, bankrollStats } from "@/src/database";
-import type { BankrollStats, DashboardData } from "@/types/poker";
 import {
   buildBankrollHistory,
   calculateStatsFromSessions,
   toPokerSession,
 } from "@/lib/poker-utils";
 import { getRawSessionsByUserId } from "@/services/poker-sessions";
+import { bankrollStats, db } from "@/src/database";
+import type { BankrollStats, DashboardData } from "@/types/poker";
 
 const toBankrollStats = (
   row: typeof bankrollStats.$inferSelect
@@ -83,9 +83,7 @@ export const recalculateAndUpsertStats = async (
 export const updateInitialBankroll = async (
   userId: string,
   initialBankroll: number
-) => {
-  return recalculateAndUpsertStats(userId, initialBankroll);
-};
+) => recalculateAndUpsertStats(userId, initialBankroll);
 
 export const getDashboardData = async (
   userId: string,

@@ -1,5 +1,5 @@
-import type { PokerSession } from "@/types/poker";
 import { orpcClient } from "@/lib/orpc/client";
+import type { PokerSession } from "@/types/poker";
 
 export const fetchSessions = async (): Promise<PokerSession[]> => {
   const { sessions } = await orpcClient.pokerSessions.list();

@@ -1,6 +1,6 @@
 import { and, desc, eq } from "drizzle-orm";
-import { db, pokerSessions } from "@/src/database";
 import { toPokerSession } from "@/lib/poker-utils";
+import { db, pokerSessions } from "@/src/database";
 
 export const getSessionsByUserId = async (userId: string, limit?: number) => {
   const rows = await db
@@ -17,7 +17,9 @@ export const getSessionById = async (userId: string, sessionId: string) => {
   const [row] = await db
     .select()
     .from(pokerSessions)
-    .where(and(eq(pokerSessions.id, sessionId), eq(pokerSessions.userId, userId)))
+    .where(
+      and(eq(pokerSessions.id, sessionId), eq(pokerSessions.userId, userId))
+    )
     .limit(1);
 
   return row ? toPokerSession(row) : null;
@@ -70,7 +72,9 @@ export const updateSession = async (
   const [row] = await db
     .update(pokerSessions)
     .set({ ...data, updatedAt: new Date() })
-    .where(and(eq(pokerSessions.id, sessionId), eq(pokerSessions.userId, userId)))
+    .where(
+      and(eq(pokerSessions.id, sessionId), eq(pokerSessions.userId, userId))
+    )
     .returning();
 
   return row ? toPokerSession(row) : null;
@@ -79,16 +83,17 @@ export const updateSession = async (
 export const deleteSession = async (userId: string, sessionId: string) => {
   const [row] = await db
     .delete(pokerSessions)
-    .where(and(eq(pokerSessions.id, sessionId), eq(pokerSessions.userId, userId)))
+    .where(
+      and(eq(pokerSessions.id, sessionId), eq(pokerSessions.userId, userId))
+    )
     .returning({ id: pokerSessions.id });
 
   return !!row;
 };
 
-export const getRawSessionsByUserId = async (userId: string) => {
-  return db
+export const getRawSessionsByUserId = async (userId: string) =>
+  db
     .select()
     .from(pokerSessions)
     .where(eq(pokerSessions.userId, userId))
     .orderBy(desc(pokerSessions.createdAt));
-};

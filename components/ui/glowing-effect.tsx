@@ -1,20 +1,20 @@
 "use client";
 
+import { animate } from "motion/react";
 import { memo, useCallback, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
-import { animate } from "motion/react";
 
 interface GlowingEffectProps {
   blur?: number;
+  borderWidth?: number;
+  className?: string;
+  disabled?: boolean;
+  glow?: boolean;
   inactiveZone?: number;
+  movementDuration?: number;
   proximity?: number;
   spread?: number;
   variant?: "default" | "white";
-  glow?: boolean;
-  className?: string;
-  disabled?: boolean;
-  movementDuration?: number;
-  borderWidth?: number;
 }
 const GlowingEffect = memo(
   ({
@@ -35,7 +35,9 @@ const GlowingEffect = memo(
 
     const handleMove = useCallback(
       (e?: MouseEvent | { x: number; y: number }) => {
-        if (!containerRef.current) return;
+        if (!containerRef.current) {
+          return;
+        }
 
         if (animationFrameRef.current) {
           cancelAnimationFrame(animationFrameRef.current);
@@ -43,7 +45,9 @@ const GlowingEffect = memo(
 
         animationFrameRef.current = requestAnimationFrame(() => {
           const element = containerRef.current;
-          if (!element) return;
+          if (!element) {
+            return;
+          }
 
           const { left, top, width, height } = element.getBoundingClientRect();
           const mouseX = e?.x ?? lastPosition.current.x;
@@ -73,11 +77,13 @@ const GlowingEffect = memo(
 
           element.style.setProperty("--active", isActive ? "1" : "0");
 
-          if (!isActive) return;
+          if (!isActive) {
+            return;
+          }
 
           const currentAngle =
-            parseFloat(element.style.getPropertyValue("--start")) || 0;
-          let targetAngle =
+            Number.parseFloat(element.style.getPropertyValue("--start")) || 0;
+          const targetAngle =
             (180 * Math.atan2(mouseY - center[1], mouseX - center[0])) /
               Math.PI +
             90;
@@ -98,7 +104,9 @@ const GlowingEffect = memo(
     );
 
     useEffect(() => {
-      if (disabled) return;
+      if (disabled) {
+        return;
+      }
 
       const handleScroll = () => handleMove();
       const handlePointerMove = (e: PointerEvent) => handleMove(e);
@@ -128,6 +136,13 @@ const GlowingEffect = memo(
           )}
         />
         <div
+          className={cn(
+            "pointer-events-none absolute inset-0 rounded-[inherit] opacity-100 transition-opacity",
+            glow && "opacity-100",
+            blur > 0 && "blur-[var(--blur)]",
+            className,
+            disabled && "!hidden"
+          )}
           ref={containerRef}
           style={
             {
@@ -158,21 +173,14 @@ const GlowingEffect = memo(
                 )`,
             } as React.CSSProperties
           }
-          className={cn(
-            "pointer-events-none absolute inset-0 rounded-[inherit] opacity-100 transition-opacity",
-            glow && "opacity-100",
-            blur > 0 && "blur-[var(--blur)] ",
-            className,
-            disabled && "!hidden"
-          )}
         >
           <div
             className={cn(
               "glow",
               "rounded-[inherit]",
-              'after:content-[""] after:rounded-[inherit] after:absolute after:inset-[calc(-1*var(--glowingeffect-border-width))]',
+              'after:absolute after:inset-[calc(-1*var(--glowingeffect-border-width))] after:rounded-[inherit] after:content-[""]',
               "after:[border:var(--glowingeffect-border-width)_solid_transparent]",
-              "after:[background:var(--gradient)] after:[background-attachment:fixed]",
+              "after:[background-attachment:fixed] after:[background:var(--gradient)]",
               "after:opacity-[var(--active)] after:transition-opacity after:duration-300",
               "after:[mask-clip:padding-box,border-box]",
               "after:[mask-composite:intersect]",

@@ -1,171 +1,203 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Card } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { DollarSign, Clock, Calendar, MapPin, GamepadIcon, Pencil, Trash2, Filter, X } from 'lucide-react'
-import Header from '@/components/Header'
-import { toast } from 'sonner'
-import Loading from '@/components/ui/loading'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import type { PokerSession } from '@/types/poker'
-import { fetchSessions, deletePokerSession, updatePokerSession } from '@/hooks/use-poker-sessions'
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  Calendar,
+  Clock,
+  DollarSign,
+  Filter,
+  GamepadIcon,
+  MapPin,
+  Pencil,
+  Trash2,
+  X,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import Header from "@/components/Header";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import Loading from "@/components/ui/loading";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  deletePokerSession,
+  fetchSessions,
+  updatePokerSession,
+} from "@/hooks/use-poker-sessions";
+import type { PokerSession } from "@/types/poker";
 
 interface Filters {
-  startDate: string
-  gameType: string
-  location: string
-  profitLoss: string
+  gameType: string;
+  location: string;
+  profitLoss: string;
+  startDate: string;
 }
 
 export default function HistoryPage() {
-  const [sessions, setSessions] = useState<PokerSession[]>([])
-  const [filteredSessions, setFilteredSessions] = useState<PokerSession[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [selectedSession, setSelectedSession] = useState<PokerSession | null>(null)
-  const [isEditingSession, setIsEditingSession] = useState(false)
-  const [editingSession, setEditingSession] = useState<PokerSession | null>(null)
-  const [showFilters, setShowFilters] = useState(false)
+  const [sessions, setSessions] = useState<PokerSession[]>([]);
+  const [filteredSessions, setFilteredSessions] = useState<PokerSession[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedSession, setSelectedSession] = useState<PokerSession | null>(
+    null
+  );
+  const [isEditingSession, setIsEditingSession] = useState(false);
+  const [editingSession, setEditingSession] = useState<PokerSession | null>(
+    null
+  );
+  const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<Filters>({
-    startDate: '',
-    gameType: '',
-    location: '',
-    profitLoss: ''
-  })
+    startDate: "",
+    gameType: "",
+    location: "",
+    profitLoss: "",
+  });
+  // biome-ignore lint/correctness/useExhaustiveDependencies: load sessions once on mount
   useEffect(() => {
-    loadSessions()
-  }, [])
-
-  useEffect(() => {
-    applyFilters()
-  }, [filters, sessions])
+    loadSessions();
+  }, []);
 
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (selectedSession) {
-          setSelectedSession(null)
-        }
-        if (isEditingSession) {
-          setIsEditingSession(false)
-          setEditingSession(null)
-        }
-      }
-    }
-
-    window.addEventListener('keydown', handleEscape)
-    return () => window.removeEventListener('keydown', handleEscape)
-  }, [selectedSession, isEditingSession])
-
-  const applyFilters = () => {
-    let filtered = [...sessions]
+    let filtered = [...sessions];
 
     if (filters.startDate) {
-      filtered = filtered.filter(session =>
-        new Date(session.created_at) >= new Date(filters.startDate)
-      )
+      filtered = filtered.filter(
+        (session) => new Date(session.created_at) >= new Date(filters.startDate)
+      );
     }
 
     if (filters.gameType) {
-      filtered = filtered.filter(session =>
-        session.game_type?.toLowerCase().includes(filters.gameType.toLowerCase()) ?? false
-      )
+      filtered = filtered.filter(
+        (session) =>
+          session.game_type
+            ?.toLowerCase()
+            .includes(filters.gameType.toLowerCase()) ?? false
+      );
     }
 
     if (filters.location) {
-      filtered = filtered.filter(session =>
-        session.location?.toLowerCase().includes(filters.location.toLowerCase()) ?? false
-      )
+      filtered = filtered.filter(
+        (session) =>
+          session.location
+            ?.toLowerCase()
+            .includes(filters.location.toLowerCase()) ?? false
+      );
     }
 
     if (filters.profitLoss) {
-      filtered = filtered.filter(session => {
-        const sessionProfitLoss = session.cash_out - session.buy_in
-        return filters.profitLoss === 'profit' ? sessionProfitLoss > 0 :
-          filters.profitLoss === 'loss' ? sessionProfitLoss < 0 :
-            sessionProfitLoss === 0
-      })
+      filtered = filtered.filter((session) => {
+        const sessionProfitLoss = session.cash_out - session.buy_in;
+        return filters.profitLoss === "profit"
+          ? sessionProfitLoss > 0
+          : filters.profitLoss === "loss"
+            ? sessionProfitLoss < 0
+            : sessionProfitLoss === 0;
+      });
     }
 
-    setFilteredSessions(filtered)
-  }
+    setFilteredSessions(filtered);
+  }, [filters, sessions]);
+
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (selectedSession) {
+          setSelectedSession(null);
+        }
+        if (isEditingSession) {
+          setIsEditingSession(false);
+          setEditingSession(null);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [selectedSession, isEditingSession]);
 
   const resetFilters = () => {
     setFilters({
-      startDate: '',
-      gameType: '',
-      location: '',
-      profitLoss: ''
-    })
-  }
+      startDate: "",
+      gameType: "",
+      location: "",
+      profitLoss: "",
+    });
+  };
 
   const loadSessions = async () => {
     try {
-      const data = await fetchSessions()
-      setSessions(data)
+      const data = await fetchSessions();
+      setSessions(data);
     } catch (error) {
-      console.error('Error:', error)
-      toast.error('An error occurred while loading history')
+      console.error("Error:", error);
+      toast.error("An error occurred while loading history");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleDeleteSession = async (sessionId: string) => {
     try {
-      await deletePokerSession(sessionId)
-      toast.success('Session deleted successfully')
-      loadSessions()
+      await deletePokerSession(sessionId);
+      toast.success("Session deleted successfully");
+      loadSessions();
     } catch (error) {
-      console.error('Error:', error)
-      toast.error(error instanceof Error ? error.message : 'An error occurred')
+      console.error("Error:", error);
+      toast.error(error instanceof Error ? error.message : "An error occurred");
     }
-  }
+  };
 
   const handleEditSession = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!editingSession) return
+    e.preventDefault();
+    if (!editingSession) {
+      return;
+    }
 
     try {
       await updatePokerSession(editingSession.id, {
         buy_in: Number(editingSession.buy_in),
         cash_out: Number(editingSession.cash_out),
         duration: Number(editingSession.duration),
-        notes: editingSession.notes || '',
+        notes: editingSession.notes || "",
         game_type: editingSession.game_type,
         location: editingSession.location,
         blinds: editingSession.blinds,
-      })
+      });
 
-      toast.success('Session updated successfully')
-      setIsEditingSession(false)
-      setEditingSession(null)
-      loadSessions()
+      toast.success("Session updated successfully");
+      setIsEditingSession(false);
+      setEditingSession(null);
+      loadSessions();
     } catch (error) {
-      console.error('Error:', error)
-      toast.error(error instanceof Error ? error.message : 'An error occurred')
+      console.error("Error:", error);
+      toast.error(error instanceof Error ? error.message : "An error occurred");
     }
-  }
+  };
 
   if (isLoading) {
-    return <Loading />
+    return <Loading />;
   }
 
   return (
-    <div className="min-h-screen bg-background relative flex flex-col">
+    <div className="relative flex min-h-screen flex-col bg-background">
       <Header />
 
-      <div className="container mx-auto px-4 py-24 relative z-10 mt-36 flex-grow">
+      <div className="container relative z-10 mx-auto mt-36 flex-grow px-4 py-24">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
+          className="mb-12 text-center"
+          initial={{ opacity: 0, y: 20 }}
           transition={{ duration: 0.8 }}
-          className="text-center mb-12"
         >
-          <h1 className="text-4xl font-bold text-white mb-4">
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-white/70">
+          <h1 className="mb-4 font-bold text-4xl text-white">
+            <span className="bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent">
               Session History
             </span>
           </h1>
@@ -174,21 +206,23 @@ export default function HistoryPage() {
           </p>
         </motion.div>
 
-        <Card className="bg-black/20 backdrop-blur-sm border border-white/10 p-6 mb-6">
-          <div className="flex justify-between items-center mb-6">
+        <Card className="mb-6 border border-white/10 bg-black/20 p-6 backdrop-blur-sm">
+          <div className="mb-6 flex items-center justify-between">
             <button
+              className="flex items-center gap-2 rounded-lg bg-primary/20 px-4 py-2 text-white transition-all duration-200 hover:bg-primary/30"
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary/20 hover:bg-primary/30 text-white rounded-lg transition-all duration-200"
+              type="button"
             >
-              <Filter className="w-4 h-4" />
-              {showFilters ? 'Hide Filters' : 'Show Filters'}
+              <Filter className="h-4 w-4" />
+              {showFilters ? "Hide Filters" : "Show Filters"}
             </button>
-            {Object.values(filters).some(value => value !== '') && (
+            {Object.values(filters).some((value) => value !== "") && (
               <button
+                className="flex items-center gap-2 rounded-lg bg-red-500/20 px-4 py-2 text-white transition-all duration-200 hover:bg-red-500/30"
                 onClick={resetFilters}
-                className="flex items-center gap-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-white rounded-lg transition-all duration-200"
+                type="button"
               >
-                <X className="w-4 h-4" />
+                <X className="h-4 w-4" />
                 Reset Filters
               </button>
             )}
@@ -197,54 +231,62 @@ export default function HistoryPage() {
           <AnimatePresence>
             {showFilters && (
               <motion.div
-                initial={{ height: 0, opacity: 0 }}
                 animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
                 className="overflow-hidden"
+                exit={{ height: 0, opacity: 0 }}
+                initial={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
               >
                 <motion.div
-                  initial={{ y: -20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
+                  className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"
                   exit={{ y: -20, opacity: 0 }}
+                  initial={{ y: -20, opacity: 0 }}
                   transition={{ duration: 0.3, delay: 0.1 }}
-                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6"
                 >
                   <div className="space-y-2">
                     <Label className="text-gray-400">Start Date</Label>
                     <Input
+                      className="border-gray-700 bg-black/40 text-white"
+                      onChange={(e) =>
+                        setFilters({ ...filters, startDate: e.target.value })
+                      }
                       type="date"
                       value={filters.startDate}
-                      onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
-                      className="bg-black/40 border-gray-700 text-white"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-gray-400">Game Type</Label>
                     <Input
-                      type="text"
+                      className="border-gray-700 bg-black/40 text-white"
+                      onChange={(e) =>
+                        setFilters({ ...filters, gameType: e.target.value })
+                      }
                       placeholder="Filter by game type..."
+                      type="text"
                       value={filters.gameType}
-                      onChange={(e) => setFilters({ ...filters, gameType: e.target.value })}
-                      className="bg-black/40 border-gray-700 text-white"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-gray-400">Location</Label>
                     <Input
-                      type="text"
+                      className="border-gray-700 bg-black/40 text-white"
+                      onChange={(e) =>
+                        setFilters({ ...filters, location: e.target.value })
+                      }
                       placeholder="Filter by location..."
+                      type="text"
                       value={filters.location}
-                      onChange={(e) => setFilters({ ...filters, location: e.target.value })}
-                      className="bg-black/40 border-gray-700 text-white"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-gray-400">Profit/Loss</Label>
                     <select
+                      className="h-10 w-full rounded-md border border-gray-700 bg-black/40 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                      onChange={(e) =>
+                        setFilters({ ...filters, profitLoss: e.target.value })
+                      }
                       value={filters.profitLoss}
-                      onChange={(e) => setFilters({ ...filters, profitLoss: e.target.value })}
-                      className="w-full h-10 rounded-md border border-gray-700 bg-black/40 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
                     >
                       <option value="">All</option>
                       <option value="profit">Profit</option>
@@ -277,85 +319,95 @@ export default function HistoryPage() {
             </TableHeader>
             <TableBody>
               {filteredSessions.map((session) => {
-                const profitLoss = session.cash_out - session.buy_in
-                const roi = ((profitLoss / session.buy_in) * 100).toFixed(1)
+                const profitLoss = session.cash_out - session.buy_in;
+                const roi = ((profitLoss / session.buy_in) * 100).toFixed(1);
 
                 return (
                   <TableRow
+                    className="cursor-pointer transition-colors duration-200 hover:bg-black/30"
                     key={session.id}
-                    className="cursor-pointer hover:bg-black/30 transition-colors duration-200"
                     onClick={() => setSelectedSession(session)}
                   >
                     <TableCell className="text-white">
                       <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4" />
+                        <Calendar className="h-4 w-4" />
                         {new Date(session.created_at).toLocaleDateString()}
                       </div>
                     </TableCell>
                     <TableCell className="text-white">
                       <div className="flex items-center gap-2">
-                        <GamepadIcon className="w-4 h-4" />
-                        {session.game_type || 'N/A'}
+                        <GamepadIcon className="h-4 w-4" />
+                        {session.game_type || "N/A"}
                       </div>
                     </TableCell>
                     <TableCell className="text-white">
                       <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4" />
-                        {session.location || 'N/A'}
+                        <MapPin className="h-4 w-4" />
+                        {session.location || "N/A"}
                       </div>
                     </TableCell>
                     <TableCell className="text-white">
                       <div className="flex items-center gap-2">
-                        <DollarSign className="w-4 h-4" />
+                        <DollarSign className="h-4 w-4" />
                         {session.buy_in.toFixed(2)}
                       </div>
                     </TableCell>
                     <TableCell className="text-white">
                       <div className="flex items-center gap-2">
-                        <DollarSign className="w-4 h-4" />
+                        <DollarSign className="h-4 w-4" />
                         {session.cash_out.toFixed(2)}
                       </div>
                     </TableCell>
-                    <TableCell className={profitLoss >= 0 ? 'text-green-500' : 'text-red-500'}>
+                    <TableCell
+                      className={
+                        profitLoss >= 0 ? "text-green-500" : "text-red-500"
+                      }
+                    >
                       <div className="flex items-center gap-2">
-                        <DollarSign className="w-4 h-4" />
+                        <DollarSign className="h-4 w-4" />
                         {profitLoss.toFixed(2)}
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2 text-white">
-                        <Clock className="w-4 h-4" />
+                        <Clock className="h-4 w-4" />
                         {session.duration}h
                       </div>
                     </TableCell>
-                    <TableCell className={profitLoss >= 0 ? 'text-green-500' : 'text-red-500'}>
+                    <TableCell
+                      className={
+                        profitLoss >= 0 ? "text-green-500" : "text-red-500"
+                      }
+                    >
                       {roi}%
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <button
+                          className="rounded-md bg-primary/20 p-1.5 text-white transition-all duration-200 hover:bg-primary/30"
                           onClick={(e) => {
                             e.stopPropagation();
                             setEditingSession(session);
                             setIsEditingSession(true);
                           }}
-                          className="p-1.5 bg-primary/20 hover:bg-primary/30 text-white rounded-md transition-all duration-200"
+                          type="button"
                         >
-                          <Pencil className="w-4 h-4" />
+                          <Pencil className="h-4 w-4" />
                         </button>
                         <button
+                          className="rounded-md bg-red-500/20 p-1.5 text-white transition-all duration-200 hover:bg-red-500/30"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleDeleteSession(session.id);
                           }}
-                          className="p-1.5 bg-red-500/20 hover:bg-red-500/30 text-white rounded-md transition-all duration-200"
+                          type="button"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
                     </TableCell>
                   </TableRow>
-                )
+                );
               })}
             </TableBody>
           </Table>
@@ -365,22 +417,36 @@ export default function HistoryPage() {
       {/* Notes Modal */}
       {selectedSession && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
           onClick={() => setSelectedSession(null)}
         >
           <div
-            className="bg-black/90 border border-white/10 rounded-lg w-full max-w-2xl"
+            className="w-full max-w-2xl rounded-lg border border-white/10 bg-black/90"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-white">Session Details</h2>
+              <div className="mb-6 flex items-center justify-between">
+                <h2 className="font-bold text-2xl text-white">
+                  Session Details
+                </h2>
                 <button
+                  className="text-gray-400 transition-colors duration-200 hover:text-white"
                   onClick={() => setSelectedSession(null)}
-                  className="text-gray-400 hover:text-white transition-colors duration-200"
+                  type="button"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <svg
+                    className="h-6 w-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M6 18L18 6M6 6l12 12"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                    />
                   </svg>
                 </button>
               </div>
@@ -388,37 +454,47 @@ export default function HistoryPage() {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm text-gray-400">Date</p>
-                    <p className="text-white">{new Date(selectedSession.created_at).toLocaleDateString()}</p>
+                    <p className="text-gray-400 text-sm">Date</p>
+                    <p className="text-white">
+                      {new Date(
+                        selectedSession.created_at
+                      ).toLocaleDateString()}
+                    </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-400">Game Type</p>
+                    <p className="text-gray-400 text-sm">Game Type</p>
                     <p className="text-white">{selectedSession.game_type}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-400">Blinds</p>
+                    <p className="text-gray-400 text-sm">Blinds</p>
                     <p className="text-white">{selectedSession.blinds}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-400">Location</p>
+                    <p className="text-gray-400 text-sm">Location</p>
                     <p className="text-white">{selectedSession.location}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-400">Duration</p>
+                    <p className="text-gray-400 text-sm">Duration</p>
                     <p className="text-white">{selectedSession.duration}h</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-400">Profit/Loss</p>
-                    <p className={selectedSession.profit_loss >= 0 ? "text-green-500" : "text-red-500"}>
+                    <p className="text-gray-400 text-sm">Profit/Loss</p>
+                    <p
+                      className={
+                        selectedSession.profit_loss >= 0
+                          ? "text-green-500"
+                          : "text-red-500"
+                      }
+                    >
                       ${selectedSession.profit_loss.toFixed(2)}
                     </p>
                   </div>
                 </div>
 
                 <div>
-                  <p className="text-sm text-gray-400 mb-2">Notes</p>
-                  <div className="bg-black/40 border border-gray-700 rounded-lg p-4">
-                    <p className="text-white whitespace-pre-wrap">
+                  <p className="mb-2 text-gray-400 text-sm">Notes</p>
+                  <div className="rounded-lg border border-gray-700 bg-black/40 p-4">
+                    <p className="whitespace-pre-wrap text-white">
                       {selectedSession.notes || "No notes for this session."}
                     </p>
                   </div>
@@ -432,138 +508,237 @@ export default function HistoryPage() {
       {/* Edit Session Modal */}
       {isEditingSession && editingSession && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
           onClick={() => {
-            setIsEditingSession(false)
-            setEditingSession(null)
+            setIsEditingSession(false);
+            setEditingSession(null);
           }}
         >
           <div
-            className="bg-black/90 border border-white/10 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+            className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg border border-white/10 bg-black/90"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-white">Edit Session</h2>
+              <div className="mb-6 flex items-center justify-between">
+                <h2 className="font-bold text-2xl text-white">Edit Session</h2>
                 <button
+                  className="text-gray-400 transition-colors duration-200 hover:text-white"
                   onClick={() => {
-                    setIsEditingSession(false)
-                    setEditingSession(null)
+                    setIsEditingSession(false);
+                    setEditingSession(null);
                   }}
-                  className="text-gray-400 hover:text-white transition-colors duration-200"
+                  type="button"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <svg
+                    className="h-6 w-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M6 18L18 6M6 6l12 12"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                    />
                   </svg>
                 </button>
               </div>
 
-              <form onSubmit={handleEditSession} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <form
+                className="grid grid-cols-1 gap-6 md:grid-cols-2"
+                onSubmit={handleEditSession}
+              >
                 <div className="space-y-4">
                   <div className="group">
-                    <Label htmlFor="edit-date" className="text-gray-400 group-hover:text-white transition-colors duration-200">Date *</Label>
+                    <Label
+                      className="text-gray-400 transition-colors duration-200 group-hover:text-white"
+                      htmlFor="edit-date"
+                    >
+                      Date *
+                    </Label>
                     <Input
+                      className="border-gray-700 bg-black/40 text-white transition-all duration-200 hover:border-primary/50 focus:border-primary"
                       id="edit-date"
+                      onChange={(e) =>
+                        setEditingSession({
+                          ...editingSession,
+                          created_at: e.target.value,
+                        })
+                      }
+                      required
                       type="date"
-                      className="bg-black/40 border-gray-700 text-white hover:border-primary/50 focus:border-primary transition-all duration-200"
-                      value={new Date(editingSession.created_at).toISOString().split('T')[0]}
-                      onChange={(e) => setEditingSession({ ...editingSession, created_at: e.target.value })}
-                      required
+                      value={
+                        new Date(editingSession.created_at)
+                          .toISOString()
+                          .split("T")[0]
+                      }
                     />
                   </div>
                   <div className="group">
-                    <Label htmlFor="edit-game-type" className="text-gray-400 group-hover:text-white transition-colors duration-200">Game Type *</Label>
+                    <Label
+                      className="text-gray-400 transition-colors duration-200 group-hover:text-white"
+                      htmlFor="edit-game-type"
+                    >
+                      Game Type *
+                    </Label>
                     <Input
+                      className="border-gray-700 bg-black/40 text-white transition-all duration-200 hover:border-primary/50 focus:border-primary"
                       id="edit-game-type"
-                      className="bg-black/40 border-gray-700 text-white hover:border-primary/50 focus:border-primary transition-all duration-200"
-                      value={editingSession.game_type ?? ''}
-                      onChange={(e) => setEditingSession({ ...editingSession, game_type: e.target.value })}
+                      onChange={(e) =>
+                        setEditingSession({
+                          ...editingSession,
+                          game_type: e.target.value,
+                        })
+                      }
                       required
+                      value={editingSession.game_type ?? ""}
                     />
                   </div>
                   <div className="group">
-                    <Label htmlFor="edit-blinds" className="text-gray-400 group-hover:text-white transition-colors duration-200">Blinds *</Label>
+                    <Label
+                      className="text-gray-400 transition-colors duration-200 group-hover:text-white"
+                      htmlFor="edit-blinds"
+                    >
+                      Blinds *
+                    </Label>
                     <Input
+                      className="border-gray-700 bg-black/40 text-white transition-all duration-200 hover:border-primary/50 focus:border-primary"
                       id="edit-blinds"
-                      className="bg-black/40 border-gray-700 text-white hover:border-primary/50 focus:border-primary transition-all duration-200"
-                      value={editingSession.blinds ?? ''}
-                      onChange={(e) => setEditingSession({ ...editingSession, blinds: e.target.value })}
+                      onChange={(e) =>
+                        setEditingSession({
+                          ...editingSession,
+                          blinds: e.target.value,
+                        })
+                      }
                       required
+                      value={editingSession.blinds ?? ""}
                     />
                   </div>
                   <div className="group">
-                    <Label htmlFor="edit-location" className="text-gray-400 group-hover:text-white transition-colors duration-200">Location *</Label>
+                    <Label
+                      className="text-gray-400 transition-colors duration-200 group-hover:text-white"
+                      htmlFor="edit-location"
+                    >
+                      Location *
+                    </Label>
                     <Input
+                      className="border-gray-700 bg-black/40 text-white transition-all duration-200 hover:border-primary/50 focus:border-primary"
                       id="edit-location"
-                      className="bg-black/40 border-gray-700 text-white hover:border-primary/50 focus:border-primary transition-all duration-200"
-                      value={editingSession.location ?? ''}
-                      onChange={(e) => setEditingSession({ ...editingSession, location: e.target.value })}
+                      onChange={(e) =>
+                        setEditingSession({
+                          ...editingSession,
+                          location: e.target.value,
+                        })
+                      }
                       required
+                      value={editingSession.location ?? ""}
                     />
                   </div>
                 </div>
                 <div className="space-y-4">
                   <div className="group">
-                    <Label htmlFor="edit-buyin" className="text-gray-400 group-hover:text-white transition-colors duration-200">Buy-in *</Label>
+                    <Label
+                      className="text-gray-400 transition-colors duration-200 group-hover:text-white"
+                      htmlFor="edit-buyin"
+                    >
+                      Buy-in *
+                    </Label>
                     <Input
+                      className="border-gray-700 bg-black/40 text-white transition-all duration-200 hover:border-primary/50 focus:border-primary"
                       id="edit-buyin"
-                      type="number"
                       min="0"
+                      onChange={(e) =>
+                        setEditingSession({
+                          ...editingSession,
+                          buy_in: Number.parseFloat(e.target.value),
+                        })
+                      }
+                      required
                       step="0.01"
-                      className="bg-black/40 border-gray-700 text-white hover:border-primary/50 focus:border-primary transition-all duration-200"
+                      type="number"
                       value={editingSession.buy_in}
-                      onChange={(e) => setEditingSession({ ...editingSession, buy_in: parseFloat(e.target.value) })}
-                      required
                     />
                   </div>
                   <div className="group">
-                    <Label htmlFor="edit-cashout" className="text-gray-400 group-hover:text-white transition-colors duration-200">Cash-out *</Label>
+                    <Label
+                      className="text-gray-400 transition-colors duration-200 group-hover:text-white"
+                      htmlFor="edit-cashout"
+                    >
+                      Cash-out *
+                    </Label>
                     <Input
+                      className="border-gray-700 bg-black/40 text-white transition-all duration-200 hover:border-primary/50 focus:border-primary"
                       id="edit-cashout"
-                      type="number"
                       min="0"
-                      step="0.01"
-                      className="bg-black/40 border-gray-700 text-white hover:border-primary/50 focus:border-primary transition-all duration-200"
-                      value={editingSession.cash_out}
-                      onChange={(e) => setEditingSession({ ...editingSession, cash_out: parseFloat(e.target.value) })}
+                      onChange={(e) =>
+                        setEditingSession({
+                          ...editingSession,
+                          cash_out: Number.parseFloat(e.target.value),
+                        })
+                      }
                       required
+                      step="0.01"
+                      type="number"
+                      value={editingSession.cash_out}
                     />
                   </div>
                   <div className="group">
-                    <Label htmlFor="edit-duration" className="text-gray-400 group-hover:text-white transition-colors duration-200">Duration (hours) *</Label>
+                    <Label
+                      className="text-gray-400 transition-colors duration-200 group-hover:text-white"
+                      htmlFor="edit-duration"
+                    >
+                      Duration (hours) *
+                    </Label>
                     <Input
+                      className="border-gray-700 bg-black/40 text-white transition-all duration-200 hover:border-primary/50 focus:border-primary"
                       id="edit-duration"
-                      type="number"
                       min="0"
-                      step="0.5"
-                      className="bg-black/40 border-gray-700 text-white hover:border-primary/50 focus:border-primary transition-all duration-200"
-                      value={editingSession.duration}
-                      onChange={(e) => setEditingSession({ ...editingSession, duration: parseFloat(e.target.value) })}
+                      onChange={(e) =>
+                        setEditingSession({
+                          ...editingSession,
+                          duration: Number.parseFloat(e.target.value),
+                        })
+                      }
                       required
+                      step="0.5"
+                      type="number"
+                      value={editingSession.duration}
                     />
                   </div>
                 </div>
                 <div className="col-span-2">
                   <div className="group">
-                    <Label htmlFor="edit-notes" className="text-gray-400 group-hover:text-white transition-colors duration-200">Notes</Label>
+                    <Label
+                      className="text-gray-400 transition-colors duration-200 group-hover:text-white"
+                      htmlFor="edit-notes"
+                    >
+                      Notes
+                    </Label>
                     <Input
+                      className="border-gray-700 bg-black/40 text-white transition-all duration-200 hover:border-primary/50 focus:border-primary"
                       id="edit-notes"
-                      className="bg-black/40 border-gray-700 text-white hover:border-primary/50 focus:border-primary transition-all duration-200"
-                      value={editingSession.notes ?? ''}
-                      onChange={(e) => setEditingSession({ ...editingSession, notes: e.target.value })}
+                      onChange={(e) =>
+                        setEditingSession({
+                          ...editingSession,
+                          notes: e.target.value,
+                        })
+                      }
+                      value={editingSession.notes ?? ""}
                     />
                   </div>
                 </div>
                 <div className="col-span-2">
                   <button
+                    className="group relative inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-lg bg-primary/20 px-6 py-3 font-display text-base text-white tracking-wide transition-all duration-300 ease-in-out hover:bg-primary/30"
                     type="submit"
-                    className="w-full relative inline-flex items-center justify-center font-display tracking-wide transition-all duration-300 ease-in-out bg-primary/20 hover:bg-primary/30 text-white px-6 py-3 text-base gap-2 rounded-lg overflow-hidden group"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/20 to-primary/0 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/20 to-primary/0 opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
                     <span className="relative flex items-center gap-2">
                       Save Changes
                     </span>
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
                   </button>
                 </div>
               </form>
@@ -572,5 +747,5 @@ export default function HistoryPage() {
         </div>
       )}
     </div>
-  )
-} 
+  );
+}

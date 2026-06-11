@@ -1,9 +1,8 @@
-import type { BankrollStats, DashboardData } from "@/types/poker";
 import { orpcClient } from "@/lib/orpc/client";
+import type { BankrollStats, DashboardData } from "@/types/poker";
 
-export const fetchDashboardData = async (): Promise<DashboardData> => {
-  return orpcClient.bankroll.getDashboard();
-};
+export const fetchDashboardData = async (): Promise<DashboardData> =>
+  orpcClient.bankroll.getDashboard();
 
 export const updateInitialBankroll = async (
   initialBankroll: number

@@ -1,26 +1,21 @@
 "use client";
 
-import dynamic from 'next/dynamic';
-import { HoverBorderGradient } from "@/components/ui/hover-border-gradient";
 import { ArrowRight } from "lucide-react";
-import { useState, useEffect } from "react";
-import Header from "@/components/Header";
+import dynamic from "next/dynamic";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import Header from "@/components/Header";
+import { HoverBorderGradient } from "@/components/ui/hover-border-gradient";
 
 const Waves = dynamic(() => import("@/components/ui/Waves"), { ssr: false });
 const Footer = dynamic(() => import("@/components/Footer"), { ssr: false });
 
-const pokerColors = [
-  "#000000",
-  "#1a1a1a",
-  "#262626", 
-  "#333333",
-]
+const pokerColors = ["#000000", "#1a1a1a", "#262626", "#333333"];
 
 export default function Home() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
-  
+
   const bankrollLetters = "Bankroll".split("");
   const managerLetters = "Manager".split("");
 
@@ -29,83 +24,83 @@ export default function Home() {
       if (isHovering) {
         setMousePosition({
           x: (e.clientX / window.innerWidth - 0.5) * 20,
-          y: (e.clientY / window.innerHeight - 0.5) * 20
+          y: (e.clientY / window.innerHeight - 0.5) * 20,
         });
       }
     };
 
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
   }, [isHovering]);
 
-
-  const getPokerColor = (index: number) => {
-    return pokerColors[index % pokerColors.length];
-  };
+  const getPokerColor = (index: number) =>
+    pokerColors[index % pokerColors.length];
 
   return (
-    <div className="min-h-screen bg-background relative">
-      <Waves 
-        lineColor="rgba(255, 255, 255, 0.1)"
+    <div className="relative min-h-screen bg-background">
+      <Waves
         backgroundColor="transparent"
-        waveSpeedX={0.0125}
-        waveSpeedY={0.005}
+        className="opacity-90"
+        lineColor="rgba(255, 255, 255, 0.1)"
         waveAmpX={32}
         waveAmpY={16}
-        className="opacity-90"
+        waveSpeedX={0.0125}
+        waveSpeedY={0.005}
       />
 
       <Header />
 
-      <main className="relative z-10 h-screen flex items-center justify-center">
-        <div className="container mx-auto px-4 flex flex-col items-center justify-center text-center">
-          <div 
-            className="relative perspective-[1000px]"
+      <main className="relative z-10 flex h-screen items-center justify-center">
+        <div className="container mx-auto flex flex-col items-center justify-center px-4 text-center">
+          <div
+            className="perspective-[1000px] relative"
             onMouseEnter={() => setIsHovering(true)}
             onMouseLeave={() => {
               setIsHovering(false);
               setMousePosition({ x: 0, y: 0 });
             }}
           >
-            <h1 
-              className="text-[13vw] font-bold text-white opacity-70 leading-none font-display tracking-tight transition-transform duration-200 ease-out"
-              style={{ 
+            <h1
+              className="font-bold font-display text-[13vw] text-white leading-none tracking-tight opacity-70 transition-transform duration-200 ease-out"
+              style={{
                 transform: `rotateX(${-mousePosition.y}deg) rotateY(${mousePosition.x}deg)`,
-                transformStyle: 'preserve-3d'
+                transformStyle: "preserve-3d",
               }}
             >
-              <span 
-                className="block -ml-[0vw] transition-all duration-300 origin-left inline-flex"
-                style={{ transform: `translateZ(20px)` }}
+              <span
+                className="-ml-[0vw] block inline-flex origin-left transition-all duration-300"
+                style={{ transform: "translateZ(20px)" }}
               >
                 {bankrollLetters.map((letter, index) => (
-                  <span 
-                    key={`bankroll-${index}`} 
+                  <span
                     className="transition-colors duration-300 hover:opacity-100"
+                    key={`bankroll-${index}`}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.color = getPokerColor(index);
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.color = '';
+                      e.currentTarget.style.color = "";
                     }}
                   >
                     {letter}
                   </span>
                 ))}
               </span>
-              <span 
-                className="block ml-[20vw] transition-all duration-300 origin-right inline-flex"
-                style={{ transform: `translateZ(30px)` }}
+              <span
+                className="ml-[20vw] block inline-flex origin-right transition-all duration-300"
+                style={{ transform: "translateZ(30px)" }}
               >
                 {managerLetters.map((letter, index) => (
-                  <span 
-                    key={`manager-${index}`} 
+                  <span
                     className="transition-colors duration-300 hover:opacity-100"
+                    key={`manager-${index}`}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.color = getPokerColor(index + bankrollLetters.length);
+                      e.currentTarget.style.color = getPokerColor(
+                        index + bankrollLetters.length
+                      );
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.color = '';
+                      e.currentTarget.style.color = "";
                     }}
                   >
                     {letter}
@@ -113,29 +108,30 @@ export default function Home() {
                 ))}
               </span>
             </h1>
-            <div className="absolute inset-0 bg-gradient-to-b from-background/0 via-background/50 to-background/0 blur-3xl -z-10" />
+            <div className="absolute inset-0 -z-10 bg-gradient-to-b from-background/0 via-background/50 to-background/0 blur-3xl" />
           </div>
-          <p className="text-xl md:text-2xl max-w-3xl text-white opacity-80 mt-8 font-sans tracking-wide">
-            Master your bankroll, elevate your game. Track, analyze, and optimize your poker journey with precision.
+          <p className="mt-8 max-w-3xl font-sans text-white text-xl tracking-wide opacity-80 md:text-2xl">
+            Master your bankroll, elevate your game. Track, analyze, and
+            optimize your poker journey with precision.
           </p>
-          
-          <div className="flex flex-col sm:flex-row gap-4 mt-12">
+
+          <div className="mt-12 flex flex-col gap-4 sm:flex-row">
             <Link href="/auth">
               <HoverBorderGradient
-                containerClassName="bg-primary/20"
                 className="bg-primary text-white opacity-70"
+                containerClassName="bg-primary/20"
               >
                 <span className="flex items-center gap-2">
                   Let&apos;s start
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="h-4 w-4" />
                 </span>
               </HoverBorderGradient>
             </Link>
-            
+
             <Link href="/about">
               <HoverBorderGradient
-                containerClassName="bg-white/20"
                 className="bg-transparent text-white opacity-70"
+                containerClassName="bg-white/20"
               >
                 Learn more
               </HoverBorderGradient>

@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React from 'react';
+import React from "react";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = React.useState(false);
@@ -10,8 +10,8 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   }, []);
 
   if (!mounted) {
-    return <div style={{ visibility: 'hidden' }}>{children}</div>;
+    return <div style={{ visibility: "hidden" }}>{children}</div>;
   }
 
   return <>{children}</>;
-} 
+}

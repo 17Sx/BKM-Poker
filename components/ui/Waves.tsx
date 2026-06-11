@@ -4,7 +4,8 @@
 	Installed from https://reactbits.dev/ts/tailwind/
 */
 
-import React, { useRef, useEffect, CSSProperties, useState } from "react";
+import type React from "react";
+import { type CSSProperties, useEffect, useRef, useState } from "react";
 
 class Grad {
   x: number;
@@ -64,11 +65,15 @@ class Noise {
     this.seed(seed);
   }
   seed(seed: number) {
-    if (seed > 0 && seed < 1) seed *= 65536;
+    if (seed > 0 && seed < 1) {
+      seed *= 65_536;
+    }
     seed = Math.floor(seed);
-    if (seed < 256) seed |= seed << 8;
+    if (seed < 256) {
+      seed |= seed << 8;
+    }
     for (let i = 0; i < 256; i++) {
-      let v =
+      const v =
         i & 1 ? this.p[i] ^ (seed & 255) : this.p[i] ^ ((seed >> 8) & 255);
       this.perm[i] = this.perm[i + 256] = v;
       this.gradP[i] = this.gradP[i + 256] = this.grad3[v % 12];
@@ -101,52 +106,52 @@ class Noise {
 }
 
 interface Point {
+  cursor: { x: number; y: number; vx: number; vy: number };
+  wave: { x: number; y: number };
   x: number;
   y: number;
-  wave: { x: number; y: number };
-  cursor: { x: number; y: number; vx: number; vy: number };
 }
 
 interface Mouse {
-  x: number;
-  y: number;
+  a: number;
   lx: number;
   ly: number;
+  set: boolean;
   sx: number;
   sy: number;
   v: number;
   vs: number;
-  a: number;
-  set: boolean;
+  x: number;
+  y: number;
 }
 
 interface Config {
+  friction: number;
   lineColor: string;
-  waveSpeedX: number;
-  waveSpeedY: number;
+  maxCursorMove: number;
+  tension: number;
   waveAmpX: number;
   waveAmpY: number;
-  friction: number;
-  tension: number;
-  maxCursorMove: number;
+  waveSpeedX: number;
+  waveSpeedY: number;
   xGap: number;
   yGap: number;
 }
 
 interface WavesProps {
-  lineColor?: string;
   backgroundColor?: string;
-  waveSpeedX?: number;
-  waveSpeedY?: number;
-  waveAmpX?: number;
-  waveAmpY?: number;
-  xGap?: number;
-  yGap?: number;
+  className?: string;
   friction?: number;
-  tension?: number;
+  lineColor?: string;
   maxCursorMove?: number;
   style?: CSSProperties;
-  className?: string;
+  tension?: number;
+  waveAmpX?: number;
+  waveAmpY?: number;
+  waveSpeedX?: number;
+  waveSpeedY?: number;
+  xGap?: number;
+  yGap?: number;
 }
 
 const Waves: React.FC<WavesProps> = ({
@@ -240,15 +245,21 @@ const Waves: React.FC<WavesProps> = ({
   ]);
 
   useEffect(() => {
-    if (!isMounted) return;
-    
+    if (!isMounted) {
+      return;
+    }
+
     const canvas = canvasRef.current;
     const container = containerRef.current;
-    if (!canvas || !container) return;
+    if (!(canvas && container)) {
+      return;
+    }
     ctxRef.current = canvas.getContext("2d");
 
     function setSize() {
-      if (!container || !canvas) return;
+      if (!(container && canvas)) {
+        return;
+      }
       const rect = container.getBoundingClientRect();
       boundingRef.current = {
         width: rect.width,
@@ -314,8 +325,8 @@ const Waves: React.FC<WavesProps> = ({
           if (dist < l) {
             const s = 1 - dist / l;
             const f = Math.cos(dist * 0.001) * s;
-            p.cursor.vx += Math.cos(mouse.a) * f * l * mouse.vs * 0.00065;
-            p.cursor.vy += Math.sin(mouse.a) * f * l * mouse.vs * 0.00065;
+            p.cursor.vx += Math.cos(mouse.a) * f * l * mouse.vs * 0.000_65;
+            p.cursor.vy += Math.sin(mouse.a) * f * l * mouse.vs * 0.000_65;
           }
 
           p.cursor.vx += (0 - p.cursor.x) * tension;
@@ -345,7 +356,9 @@ const Waves: React.FC<WavesProps> = ({
     function drawLines() {
       const { width, height } = boundingRef.current;
       const ctx = ctxRef.current;
-      if (!ctx) return;
+      if (!ctx) {
+        return;
+      }
       ctx.clearRect(0, 0, width, height);
       ctx.beginPath();
       ctx.strokeStyle = configRef.current.lineColor;
@@ -360,14 +373,18 @@ const Waves: React.FC<WavesProps> = ({
             !isLast
           );
           ctx.lineTo(p1.x, p1.y);
-          if (isLast) ctx.moveTo(p2.x, p2.y);
+          if (isLast) {
+            ctx.moveTo(p2.x, p2.y);
+          }
         });
       });
       ctx.stroke();
     }
 
     function tick(t: number) {
-      if (!container) return;
+      if (!container) {
+        return;
+      }
       const mouse = mouseRef.current;
       mouse.sx += (mouse.x - mouse.sx) * 0.1;
       mouse.sy += (mouse.y - mouse.sy) * 0.1;
@@ -431,27 +448,27 @@ const Waves: React.FC<WavesProps> = ({
   }, [isMounted]);
 
   if (!isMounted) {
-    return <div className={className} style={{...style, backgroundColor}} />;
+    return <div className={className} style={{ ...style, backgroundColor }} />;
   }
 
   return (
     <div
+      className={`absolute top-0 left-0 h-full w-full overflow-hidden ${className}`}
       ref={containerRef}
       style={{
         backgroundColor,
         ...style,
       }}
-      className={`absolute top-0 left-0 w-full h-full overflow-hidden ${className}`}
     >
       <div
-        className="absolute top-0 left-0 bg-[#160000] rounded-full w-[0.5rem] h-[0.5rem]"
+        className="absolute top-0 left-0 h-[0.5rem] w-[0.5rem] rounded-full bg-[#160000]"
         style={{
           transform:
             "translate3d(calc(var(--x) - 50%), calc(var(--y) - 50%), 0)",
           willChange: "transform",
         }}
       />
-      <canvas ref={canvasRef} className="block w-full h-full" />
+      <canvas className="block h-full w-full" ref={canvasRef} />
     </div>
   );
 };

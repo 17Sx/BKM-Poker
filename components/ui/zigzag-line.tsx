@@ -1,7 +1,6 @@
-'use client'
+"use client";
 
-import { motion } from 'framer-motion'
-import Footer from '../Footer'
+import { motion } from "framer-motion";
 
 export const ZigzagLine = () => {
   const pathVariants = {
@@ -11,31 +10,31 @@ export const ZigzagLine = () => {
       opacity: 0.3,
       transition: {
         pathLength: { duration: 3, ease: "easeInOut" },
-        opacity: { duration: 0.5 }
-      }
-    }
-  }
+        opacity: { duration: 0.5 },
+      },
+    },
+  };
 
   return (
-    <div className="fixed inset-0 pointer-events-none overflow-hidden">
+    <div className="pointer-events-none fixed inset-0 overflow-hidden">
       <svg
-        width="100%"
-        height="100%"
-        viewBox="0 0 100 100"
-        preserveAspectRatio="none"
         className="absolute inset-0"
+        height="100%"
+        preserveAspectRatio="none"
+        viewBox="0 0 100 100"
+        width="100%"
       >
         <motion.path
+          animate="visible"
           d="M30,0 C45,20 35,40 45,50 C55,60 45,80 70,100"
-          stroke="url(#gradient)"
-          strokeWidth="0.3"
           fill="none"
           initial="hidden"
-          animate="visible"
+          stroke="url(#gradient)"
+          strokeWidth="0.3"
           variants={pathVariants}
         />
         <defs>
-          <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+          <linearGradient id="gradient" x1="0%" x2="0%" y1="0%" y2="100%">
             <stop offset="0%" stopColor="rgba(255,255,255,0.05)" />
             <stop offset="50%" stopColor="rgba(255,255,255,0.2)" />
             <stop offset="100%" stopColor="rgba(255,255,255,0.05)" />
@@ -43,5 +42,5 @@ export const ZigzagLine = () => {
         </defs>
       </svg>
     </div>
-  )
-} 
+  );
+};

@@ -1,5 +1,13 @@
 import { sql } from "drizzle-orm";
-import { index, numeric, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import {
+  index,
+  numeric,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
 import { user } from "./auth";
 
 export const bankrollStats = pgTable(
@@ -9,12 +17,25 @@ export const bankrollStats = pgTable(
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    totalBankroll: numeric("total_bankroll", { precision: 10, scale: 2 }).notNull().default("0"),
-    initialBankroll: numeric("initial_bankroll", { precision: 10, scale: 2 }).notNull().default("0"),
-    monthlyProfit: numeric("monthly_profit", { precision: 10, scale: 2 }).notNull().default("0"),
-    hoursPlayed: numeric("hours_played", { precision: 10, scale: 2 }).notNull().default("0"),
-    winRate: numeric("win_rate", { precision: 5, scale: 2 }).notNull().default("0"),
-    winningSessionsPercentage: numeric("winning_sessions_percentage", { precision: 5, scale: 2 })
+    totalBankroll: numeric("total_bankroll", { precision: 10, scale: 2 })
+      .notNull()
+      .default("0"),
+    initialBankroll: numeric("initial_bankroll", { precision: 10, scale: 2 })
+      .notNull()
+      .default("0"),
+    monthlyProfit: numeric("monthly_profit", { precision: 10, scale: 2 })
+      .notNull()
+      .default("0"),
+    hoursPlayed: numeric("hours_played", { precision: 10, scale: 2 })
+      .notNull()
+      .default("0"),
+    winRate: numeric("win_rate", { precision: 5, scale: 2 })
+      .notNull()
+      .default("0"),
+    winningSessionsPercentage: numeric("winning_sessions_percentage", {
+      precision: 5,
+      scale: 2,
+    })
       .notNull()
       .default("0"),
     createdAt: timestamp("created_at", { withTimezone: true })
