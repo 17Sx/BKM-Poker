@@ -6,10 +6,10 @@
   /* Couleurs principales */
 
   /* Couleurs d'accent */
-  --primary: oklch(0.216 0.006 56.043);      /* Or brillant */
+  --primary: oklch(0.216 0.006 56.043); /* Or brillant */
   --primary-dark: #b8860b; /* Or foncé */
-  --secondary: oklch(0.97 0.001 106.424);    /* Noir profond */
-  --accent: oklch(0.97 0.001 106.424);       /* Rouge poker */
+  --secondary: oklch(0.97 0.001 106.424); /* Noir profond */
+  --accent: oklch(0.97 0.001 106.424); /* Rouge poker */
 
   /* Couleurs de texte */
   --text-primary: #ffffff;
@@ -68,8 +68,8 @@
 
 body {
   font-family: var(--font-sans);
-  background-color: var(--background);
   color: var(--foreground);
+  background-color: var(--background);
 }
 
 .dark {
@@ -105,5 +105,3 @@ body {
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.553 0.013 58.071);
 }
-
-

@@ -3,9 +3,9 @@ description:
 globs: 
 alwaysApply: true
 ---
-You are an expert in TypeScript, React, Next.js App Router, Supabase, Tailwind CSS, Shadcn UI, Acernity UI, and modern UI/UX best practices.
+You are an expert in TypeScript, React, Next.js App Router, Drizzle ORM, Neon PostgreSQL, Better Auth, Tailwind CSS, Shadcn UI, Acernity UI, and modern UI/UX best practices.
 
-Your goal is to assist in building a poker bankroll management app with a sleek, responsive frontend and a powerful, secure backend using Supabase.
+Your goal is to assist in building a poker bankroll management app with a sleek, responsive frontend and a powerful, secure backend using Neon, Drizzle, and Better Auth.
 
 Frontend Development
   - Use TypeScript and functional components. Avoid class components.
@@ -24,12 +24,13 @@ Folder & Code Structure
   - Organize by feature: separate bankroll logic, session tracking, stats dashboard, auth, etc.
   - Avoid deeply nested folders; use clear names for easy scanning.
 
-Data Handling & Supabase
-  - Use Supabase client with RLS enforced. Never expose unvalidated data.
-  - Use `zod` for schema validation on all form submissions and Supabase queries.
-  - Fetch only necessary fields. Paginate large lists and use `select()` filters.
-  - Always check Supabase errors and return user-friendly messages.
-  - Encapsulate Supabase logic in `lib/supabase/` or `services/` files.
+Data Handling & Backend
+  - Use Drizzle ORM with Neon PostgreSQL. Never expose unvalidated data.
+  - Use `zod` for schema validation on all API inputs and form submissions.
+  - Fetch data through the typed oRPC client (`lib/orpc/client.ts`), not direct DB access from client components.
+  - Always check errors and return user-friendly messages.
+  - Encapsulate database logic in `services/` files. Keep Drizzle schemas in `src/database/schema/`.
+  - Scope all queries by authenticated `userId` from Better Auth session.
 
 UI/UX Patterns
   - Use a mobile-first design approach.
@@ -55,8 +56,6 @@ Additional Features
   - Assist with creating and validating forms (e.g., session tracking, bankroll entries).
   - Implement dashboard views with charts/stats to visualize performance.
   - Support writing unit tests for hooks and logic-heavy components.
-  - Ensure Supabase security policies are respected across the app.
+  - Ensure oRPC procedures use the `authed` middleware for session-based authorization on every request.
 
 Your assistance should focus on correctness, reusability, clarity, and user experience.
-
-

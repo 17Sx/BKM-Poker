@@ -1,15 +1,15 @@
 "use client";
 
-import { ReactNode } from "react";
 import { motion } from "framer-motion";
+import type { ReactNode } from "react";
 
 interface ButtonProps {
   children: ReactNode;
-  variant?: "primary" | "secondary" | "outline";
-  size?: "sm" | "md" | "lg";
   className?: string;
-  onClick?: () => void;
   href?: string;
+  onClick?: () => void;
+  size?: "sm" | "md" | "lg";
+  variant?: "primary" | "secondary" | "outline";
 }
 
 const Button = ({
@@ -20,8 +20,9 @@ const Button = ({
   onClick,
   href,
 }: ButtonProps) => {
-  const baseStyles = "relative inline-flex items-center justify-center font-display tracking-wide transition-all duration-300 ease-in-out";
-  
+  const baseStyles =
+    "relative inline-flex items-center justify-center font-display tracking-wide transition-all duration-300 ease-in-out";
+
   const variants = {
     primary: "bg-primary text-primary-foreground hover:bg-primary-dark",
     secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
@@ -36,25 +37,25 @@ const Button = ({
 
   const buttonContent = (
     <motion.div
+      className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className} overflow-hidden rounded-lg`}
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
-      className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className} rounded-lg overflow-hidden`}
     >
       <span className="relative z-10 flex items-center gap-2">{children}</span>
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300" />
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 transition-opacity duration-300 hover:opacity-100" />
     </motion.div>
   );
 
   if (href) {
     return (
-      <a href={href} className="inline-block">
+      <a className="inline-block" href={href}>
         {buttonContent}
       </a>
     );
   }
 
   return (
-    <button onClick={onClick} className="inline-block">
+    <button className="inline-block" onClick={onClick} type="button">
       {buttonContent}
     </button>
   );

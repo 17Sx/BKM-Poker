@@ -1,0 +1,3 @@
+[install]
+# Avoid EBUSY/EPERM errors on Windows (hardlinks + file locks)
+backend = "copyfile"

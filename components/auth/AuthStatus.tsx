@@ -1,49 +1,45 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
-import { useRouter } from 'next/navigation'
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { authClient } from "@/lib/auth-client";
+
+interface AuthUser {
+  email: string;
+}
 
 export default function AuthStatus() {
-  const [user, setUser] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const router = useRouter()
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     const getUser = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
-        setUser(user)
+        const { data } = await authClient.getSession();
+        setUser(data?.user ? { email: data.user.email } : null);
       } catch (error) {
-        console.error('Erreur lors de la récupération de l\'utilisateur:', error)
+        console.error("Error fetching user:", error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    getUser()
-
-    // Écouter les changements d'authentification
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-    })
-
-    return () => {
-      subscription.unsubscribe()
-    }
-  }, [])
+    getUser();
+  }, []);
 
   const handleSignOut = async () => {
     try {
-      await supabase.auth.signOut()
-      router.push('/auth')
+      await authClient.signOut();
+      router.push("/auth");
+      router.refresh();
     } catch (error) {
-      console.error('Erreur lors de la déconnexion:', error)
+      console.error("Error signing out:", error);
     }
-  }
+  };
 
   if (loading) {
-    return <div className="text-white">Chargement...</div>
+    return <div className="text-white">Loading...</div>;
   }
 
   return (
@@ -51,20 +47,19 @@ export default function AuthStatus() {
       {user ? (
         <>
           <div className="text-white">
-            Connecté en tant que : <span className="font-bold">{user.email}</span>
+            Signed in as: <span className="font-bold">{user.email}</span>
           </div>
           <button
+            className="rounded-md bg-red-500/20 px-4 py-2 font-medium text-sm text-white transition-colors hover:bg-red-500/30"
             onClick={handleSignOut}
-            className="px-4 py-2 text-sm font-medium text-white bg-red-500/20 rounded-md hover:bg-red-500/30 transition-colors"
+            type="button"
           >
-            Se déconnecter
+            Sign Out
           </button>
         </>
       ) : (
-        <div className="text-white">
-          Non connecté
-        </div>
+        <div className="text-white">Not signed in</div>
       )}
     </div>
-  )
-} 
+  );
+}
