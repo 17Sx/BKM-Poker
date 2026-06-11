@@ -12,49 +12,20 @@ import { DollarSign, TrendingUp, TrendingDown, BarChart2, Plus, Calendar, Clock,
 import Header from '@/components/Header'
 import { WobbleCard } from '@/components/ui/wobble-card'
 import { HoverBorderGradient } from '@/components/ui/hover-border-gradient'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { toast } from 'sonner'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import Loading from '@/components/ui/loading'
-
-
-interface Session {
-  id: string
-  buy_in: number
-  cash_out: number
-  duration: number
-  notes: string
-  created_at: string
-  profit_loss: number
-  roi: number
-  game_type: string
-  location: string
-  blinds: string
-}
-
-interface BankrollStats {
-  id: string
-  user_id: string
-  total_bankroll: number
-  initial_bankroll: number
-  monthly_profit: number
-  hours_played: number
-  win_rate: number
-  winning_sessions_percentage: number
-}
-
-interface BankrollHistory {
-  date: string
-  amount: number
-}
+import type { PokerSession, BankrollStats, BankrollHistory } from '@/types/poker'
+import { fetchDashboardData, updateInitialBankroll } from '@/hooks/use-bankroll'
+import { createPokerSession, deletePokerSession, updatePokerSession } from '@/hooks/use-poker-sessions'
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState('overview')
-  const [sessions, setSessions] = useState<Session[]>([])
+  const [sessions, setSessions] = useState<PokerSession[]>([])
   const [bankrollHistory, setBankrollHistory] = useState<BankrollHistory[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [selectedSession, setSelectedSession] = useState<Session | null>(null)
+  const [selectedSession, setSelectedSession] = useState<PokerSession | null>(null)
   const [stats, setStats] = useState<BankrollStats>({
     id: '',
     user_id: '',
@@ -78,110 +49,15 @@ export default function DashboardPage() {
   const [isEditingBankroll, setIsEditingBankroll] = useState(false)
   const [newBankrollValue, setNewBankrollValue] = useState('')
   const [isEditingSession, setIsEditingSession] = useState(false)
-  const [editingSession, setEditingSession] = useState<Session | null>(null)
-  const supabase = createClientComponentClient()
+  const [editingSession, setEditingSession] = useState<PokerSession | null>(null)
 
   const fetchData = async () => {
     setIsLoading(true)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (!user) {
-        toast.error('You must be logged in to view your dashboard')
-        return
-      }
-
-      // Fetch all data in parallel with a single query for sessions
-      const [sessionsResponse, statsResponse] = await Promise.all([
-        supabase
-          .from('poker_sessions')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false }),
-        supabase
-          .from('bankroll_stats')
-          .select('*')
-          .eq('user_id', user.id)
-          .single()
-      ])
-
-      if (sessionsResponse.error) {
-        throw new Error('Error loading sessions')
-      }
-
-      const sessions = sessionsResponse.data || []
-      setSessions(sessions.slice(0, 10)) // Only keep last 10 sessions for display
-
-      // Calculate bankroll history
-      const initialBankroll = statsResponse.data?.initial_bankroll || 0
-      let runningTotal = initialBankroll
-      const history = sessions
-        .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-        .map(session => {
-          const profit = session.cash_out - session.buy_in
-          runningTotal += profit
-          return {
-            date: new Date(session.created_at).toLocaleDateString(),
-            amount: runningTotal
-          }
-        })
-      setBankrollHistory(history)
-
-      // Calculate statistics
-      const totalProfit = sessions.reduce((acc, session) => acc + (session.cash_out - session.buy_in), 0)
-      const totalHours = sessions.reduce((acc, session) => acc + session.duration, 0)
-      const totalBuyIn = sessions.reduce((acc, session) => acc + session.buy_in, 0)
-      const winningSessions = sessions.filter(session => session.cash_out > session.buy_in).length
-      const winRate = totalHours > 0 ? totalProfit / totalHours : 0
-      const roi = totalBuyIn > 0 ? (totalProfit / totalBuyIn) * 100 : 0
-      const winningPercentage = sessions.length > 0 ? (winningSessions / sessions.length) * 100 : 0
-
-      // Update or create stats
-      if (statsResponse.error) {
-        if (statsResponse.error.code === 'PGRST116') {
-          // Create new stats
-          const { error: insertError } = await supabase
-            .from('bankroll_stats')
-            .insert([{
-              user_id: user.id,
-              initial_bankroll: initialBankroll,
-              total_bankroll: initialBankroll + totalProfit,
-              monthly_profit: totalProfit,
-              hours_played: totalHours,
-              win_rate: roi,
-              winning_sessions_percentage: winningPercentage
-            }])
-
-          if (insertError) throw new Error('Error creating statistics')
-        } else {
-          throw new Error('Error loading statistics')
-        }
-      } else {
-        // Update existing stats
-        const { error: updateError } = await supabase
-          .from('bankroll_stats')
-          .update({
-            total_bankroll: statsResponse.data.initial_bankroll + totalProfit,
-            monthly_profit: totalProfit,
-            hours_played: totalHours,
-            win_rate: roi,
-            winning_sessions_percentage: winningPercentage
-          })
-          .eq('user_id', user.id)
-
-        if (updateError) throw new Error('Error updating statistics')
-      }
-
-      // Get final stats
-      const { data: finalStats, error: finalError } = await supabase
-        .from('bankroll_stats')
-        .select('*')
-        .eq('user_id', user.id)
-        .single()
-
-      if (finalError) throw new Error('Error loading final statistics')
-      setStats(finalStats)
-
+      const data = await fetchDashboardData()
+      setSessions(data.sessions)
+      setBankrollHistory(data.bankrollHistory)
+      setStats(data.stats)
     } catch (error) {
       console.error('Error:', error)
       toast.error(error instanceof Error ? error.message : 'An error occurred')
@@ -201,73 +77,18 @@ export default function DashboardPage() {
     }
     
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (!user) {
-        toast.error('You must be logged in to modify your bankroll')
-        return
-      }
-
       const newValue = parseFloat(newBankrollValue)
       if (isNaN(newValue)) {
         toast.error('Please enter a valid amount')
         return
       }
 
-      // Get current stats and sessions in parallel
-      const [statsResponse, sessionsResponse] = await Promise.all([
-        supabase
-        .from('bankroll_stats')
-        .select('*')
-        .eq('user_id', user.id)
-          .single(),
-        supabase
-          .from('poker_sessions')
-          .select('cash_out, buy_in')
-          .eq('user_id', user.id)
-      ])
-
-      if (sessionsResponse.error) throw new Error('Error loading sessions')
-
-      const totalProfit = sessionsResponse.data.reduce((acc, session) => 
-        acc + (session.cash_out - session.buy_in), 0)
-
-      if (statsResponse.error) {
-        if (statsResponse.error.code === 'PGRST116') {
-          // Create new stats
-          const { error: insertError } = await supabase
-            .from('bankroll_stats')
-            .insert([{
-              user_id: user.id,
-              initial_bankroll: newValue,
-              total_bankroll: newValue + totalProfit,
-              monthly_profit: totalProfit,
-              hours_played: 0,
-              win_rate: 0,
-              winning_sessions_percentage: 0
-            }])
-
-          if (insertError) throw new Error('Error creating bankroll stats')
-        } else {
-          throw new Error('Error loading bankroll stats')
-        }
-      } else {
-        // Update existing stats
-        const { error: updateError } = await supabase
-        .from('bankroll_stats')
-        .update({ 
-          initial_bankroll: newValue,
-            total_bankroll: newValue + totalProfit,
-        })
-        .eq('user_id', user.id)
-
-        if (updateError) throw new Error('Error updating bankroll')
-      }
+      await updateInitialBankroll(newValue)
 
       toast.success('Initial bankroll updated successfully')
       setIsEditingBankroll(false)
       setNewBankrollValue('')
-      fetchData() // Refresh all data
+      fetchData()
     } catch (error) {
       console.error('Error:', error)
       toast.error(error instanceof Error ? error.message : 'An error occurred')
@@ -294,71 +115,16 @@ export default function DashboardPage() {
     }
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (!user) {
-        toast.error('You must be logged in to add a session')
-        return
-      }
-
-      const profit = parseFloat(newSession.cash_out) - parseFloat(newSession.buy_in)
-
-      // Insert session and update stats in parallel
-      const [sessionResponse, statsResponse] = await Promise.all([
-        supabase
-          .from('poker_sessions')
-          .insert([{
-            user_id: user.id,
-            buy_in: parseFloat(newSession.buy_in),
-            cash_out: parseFloat(newSession.cash_out),
-            duration: parseFloat(newSession.duration),
-            notes: newSession.notes,
-            game_type: newSession.game_type,
-            location: newSession.location,
-            blinds: newSession.blinds,
-            created_at: newSession.date
-          }]),
-        supabase
-          .from('bankroll_stats')
-          .select('*')
-          .eq('user_id', user.id)
-          .single()
-      ])
-
-      if (sessionResponse.error) throw new Error('Error adding session')
-
-      if (statsResponse.error) {
-        if (statsResponse.error.code === 'PGRST116') {
-          // Create new stats
-          const { error: insertError } = await supabase
-            .from('bankroll_stats')
-            .insert([{
-              user_id: user.id,
-              initial_bankroll: 0,
-              total_bankroll: profit,
-              monthly_profit: profit,
-              hours_played: parseFloat(newSession.duration),
-              win_rate: 0,
-              winning_sessions_percentage: 0
-            }])
-
-          if (insertError) throw new Error('Error creating statistics')
-        } else {
-          throw new Error('Error loading statistics')
-        }
-      } else {
-        // Update existing stats
-        const { error: updateError } = await supabase
-          .from('bankroll_stats')
-          .update({
-            total_bankroll: statsResponse.data.initial_bankroll + statsResponse.data.monthly_profit + profit,
-            monthly_profit: statsResponse.data.monthly_profit + profit,
-            hours_played: statsResponse.data.hours_played + parseFloat(newSession.duration)
-          })
-          .eq('user_id', user.id)
-
-        if (updateError) throw new Error('Error updating statistics')
-      }
+      await createPokerSession({
+        buy_in: parseFloat(newSession.buy_in),
+        cash_out: parseFloat(newSession.cash_out),
+        duration: parseFloat(newSession.duration),
+        notes: newSession.notes,
+        game_type: newSession.game_type,
+        location: newSession.location,
+        blinds: newSession.blinds,
+        date: newSession.date,
+      })
 
       toast.success('Session added successfully')
       setNewSession({
@@ -380,23 +146,9 @@ export default function DashboardPage() {
 
   const handleDeleteSession = async (sessionId: string) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (!user) {
-        toast.error('You must be logged in to delete a session')
-        return
-      }
-
-      const { error } = await supabase
-        .from('poker_sessions')
-        .delete()
-        .eq('id', sessionId)
-        .eq('user_id', user.id)
-
-      if (error) throw new Error('Error deleting session')
-
+      await deletePokerSession(sessionId)
       toast.success('Session deleted successfully')
-      fetchData() // Refresh data
+      fetchData()
     } catch (error) {
       console.error('Error:', error)
       toast.error(error instanceof Error ? error.message : 'An error occurred')
@@ -408,40 +160,20 @@ export default function DashboardPage() {
     if (!editingSession) return
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (!user) {
-        toast.error('You must be logged in to edit a session')
-        return
-      }
-
-      // Format the data properly
-      const updatedSession = {
+      await updatePokerSession(editingSession.id, {
         buy_in: Number(editingSession.buy_in),
         cash_out: Number(editingSession.cash_out),
         duration: Number(editingSession.duration),
         notes: editingSession.notes || '',
         game_type: editingSession.game_type,
         location: editingSession.location,
-        blinds: editingSession.blinds
-      }
-
-      // Use a simple update
-      const { error } = await supabase
-        .from('poker_sessions')
-        .update(updatedSession)
-        .eq('id', editingSession.id)
-        .eq('user_id', user.id)
-
-      if (error) {
-        console.error('Supabase error:', error)
-        throw new Error(error.message)
-      }
+        blinds: editingSession.blinds,
+      })
 
       toast.success('Session updated successfully')
       setIsEditingSession(false)
       setEditingSession(null)
-      fetchData() // Refresh data
+      fetchData()
     } catch (error) {
       console.error('Error:', error)
       toast.error(error instanceof Error ? error.message : 'An error occurred')
@@ -934,7 +666,7 @@ export default function DashboardPage() {
                       <Input 
                         id="edit-game-type" 
                         className="bg-black/40 border-gray-700 text-white hover:border-primary/50 focus:border-primary transition-all duration-200"
-                        value={editingSession.game_type}
+                        value={editingSession.game_type ?? ''}
                         onChange={(e) => setEditingSession({...editingSession, game_type: e.target.value})}
                         required
                       />
@@ -944,7 +676,7 @@ export default function DashboardPage() {
                       <Input 
                         id="edit-blinds" 
                         className="bg-black/40 border-gray-700 text-white hover:border-primary/50 focus:border-primary transition-all duration-200"
-                        value={editingSession.blinds}
+                        value={editingSession.blinds ?? ''}
                         onChange={(e) => setEditingSession({...editingSession, blinds: e.target.value})}
                         required
                       />
@@ -954,7 +686,7 @@ export default function DashboardPage() {
                       <Input 
                         id="edit-location" 
                         className="bg-black/40 border-gray-700 text-white hover:border-primary/50 focus:border-primary transition-all duration-200"
-                        value={editingSession.location}
+                        value={editingSession.location ?? ''}
                         onChange={(e) => setEditingSession({...editingSession, location: e.target.value})}
                         required
                       />
@@ -1007,7 +739,7 @@ export default function DashboardPage() {
                       <Input 
                         id="edit-notes" 
                         className="bg-black/40 border-gray-700 text-white hover:border-primary/50 focus:border-primary transition-all duration-200"
-                        value={editingSession.notes}
+                        value={editingSession.notes ?? ''}
                         onChange={(e) => setEditingSession({...editingSession, notes: e.target.value})}
                       />
                     </div>

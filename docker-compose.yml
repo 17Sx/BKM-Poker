@@ -1,0 +1,16 @@
+services:
+  postgres:
+    # Connect with: psql -h localhost -p 5557 -U postgres -d bkm_poker
+    image: postgres:16-alpine
+    restart: always
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5557:5432"
+    environment:
+      POSTGRES_DB: bkm_poker
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+
+volumes:
+  postgres_data:

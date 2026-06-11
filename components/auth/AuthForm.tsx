@@ -1,9 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useRouter } from 'next/navigation'
 import { User, Key, ArrowRight, Eye, EyeOff, Spade } from 'lucide-react'
+import { authClient } from '@/lib/auth-client'
 
 export default function AuthForm() {
   const [email, setEmail] = useState('')
@@ -13,7 +13,6 @@ export default function AuthForm() {
   const [isSignUp, setIsSignUp] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
   const router = useRouter()
-  const supabase = createClientComponentClient()
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -21,27 +20,24 @@ export default function AuthForm() {
     setMessage('')
 
     try {
-      const { error, data } = await supabase.auth.signUp({
+      const { error } = await authClient.signUp.email({
         email,
         password,
-        options: {
-          emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
-        },
+        name: email.split('@')[0],
       })
 
       if (error) {
-        console.error('Sign up error:', error)
-        throw error
+        throw new Error(error.message)
       }
 
-      if (data?.user) {
-        setMessage('Registration successful! Please check your email to confirm your account.')
-        setTimeout(() => {
-          router.push('/auth?message=check-email')
-        }, 2000)
-      }
-    } catch (error: any) {
-      setMessage(error.message || 'An error occurred during registration')
+      setMessage('Registration successful! You can now sign in.')
+      setTimeout(() => {
+        setIsSignUp(false)
+        setMessage('')
+      }, 2000)
+    } catch (error: unknown) {
+      const err = error as Error
+      setMessage(err.message || 'An error occurred during registration')
     } finally {
       setLoading(false)
     }
@@ -53,29 +49,21 @@ export default function AuthForm() {
     setMessage('')
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await authClient.signIn.email({
         email,
         password,
       })
 
       if (error) {
-        throw error
+        throw new Error(error.message)
       }
 
-      if (data?.session) {
-        setMessage('Login successful! Redirecting...')
-        
-        const { data: { session } } = await supabase.auth.getSession()
-        
-        if (session) {
-          window.location.replace('/dashboard')
-        } else {
-          throw new Error('Session not established')
-        }
-      }
-    } catch (error: any) {
-      console.error('Login error:', error)
-      setMessage(error.message || 'An error occurred during login')
+      setMessage('Login successful! Redirecting...')
+      router.push('/dashboard')
+      router.refresh()
+    } catch (error: unknown) {
+      const err = error as Error
+      setMessage(err.message || 'An error occurred during login')
     } finally {
       setLoading(false)
     }
@@ -184,4 +172,4 @@ export default function AuthForm() {
       </div>
     </div>
   )
-} 
+}

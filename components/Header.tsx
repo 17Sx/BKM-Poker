@@ -4,34 +4,24 @@ import Link from 'next/link'
 import Button from './ui/button'
 import Nav from './ui/Nav'
 import { useEffect, useState } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useRouter } from 'next/navigation'
+import { authClient } from '@/lib/auth-client'
 
 export default function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [isScrolled, setIsScrolled] = useState(false)
-  const supabase = createClientComponentClient()
   const router = useRouter()
 
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      setIsLoggedIn(!!user)
-      setUserEmail(user?.email || null)
+      const { data } = await authClient.getSession()
+      setIsLoggedIn(!!data?.user)
+      setUserEmail(data?.user?.email || null)
     }
 
     checkUser()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsLoggedIn(!!session?.user)
-      setUserEmail(session?.user?.email || null)
-    })
-
-    return () => {
-      subscription.unsubscribe()
-    }
-  }, [supabase.auth])
+  }, [])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -44,8 +34,11 @@ export default function Header() {
   }, [])
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut()
+    await authClient.signOut()
+    setIsLoggedIn(false)
+    setUserEmail(null)
     router.push('/auth')
+    router.refresh()
   }
 
   return (

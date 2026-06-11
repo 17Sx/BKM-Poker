@@ -6,25 +6,12 @@ import { Card } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { DollarSign, Clock, Calendar, MapPin, GamepadIcon, Pencil, Trash2, Filter, X } from 'lucide-react'
 import Header from '@/components/Header'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { toast } from 'sonner'
 import Loading from '@/components/ui/loading'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-
-interface Session {
-  id: string
-  buy_in: number
-  cash_out: number
-  duration: number
-  notes: string
-  created_at: string
-  profit_loss: number
-  roi: number
-  game_type: string
-  location: string
-  blinds: string
-}
+import type { PokerSession } from '@/types/poker'
+import { fetchSessions, deletePokerSession, updatePokerSession } from '@/hooks/use-poker-sessions'
 
 interface Filters {
   startDate: string
@@ -34,12 +21,12 @@ interface Filters {
 }
 
 export default function HistoryPage() {
-  const [sessions, setSessions] = useState<Session[]>([])
-  const [filteredSessions, setFilteredSessions] = useState<Session[]>([])
+  const [sessions, setSessions] = useState<PokerSession[]>([])
+  const [filteredSessions, setFilteredSessions] = useState<PokerSession[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [selectedSession, setSelectedSession] = useState<Session | null>(null)
+  const [selectedSession, setSelectedSession] = useState<PokerSession | null>(null)
   const [isEditingSession, setIsEditingSession] = useState(false)
-  const [editingSession, setEditingSession] = useState<Session | null>(null)
+  const [editingSession, setEditingSession] = useState<PokerSession | null>(null)
   const [showFilters, setShowFilters] = useState(false)
   const [filters, setFilters] = useState<Filters>({
     startDate: '',
@@ -47,10 +34,8 @@ export default function HistoryPage() {
     location: '',
     profitLoss: ''
   })
-  const supabase = createClientComponentClient()
-
   useEffect(() => {
-    fetchSessions()
+    loadSessions()
   }, [])
 
   useEffect(() => {
@@ -78,19 +63,19 @@ export default function HistoryPage() {
     let filtered = [...sessions]
 
     if (filters.startDate) {
-      filtered = filtered.filter(session => 
+      filtered = filtered.filter(session =>
         new Date(session.created_at) >= new Date(filters.startDate)
       )
     }
 
     if (filters.gameType) {
-      filtered = filtered.filter(session => 
+      filtered = filtered.filter(session =>
         session.game_type?.toLowerCase().includes(filters.gameType.toLowerCase()) ?? false
       )
     }
 
     if (filters.location) {
-      filtered = filtered.filter(session => 
+      filtered = filtered.filter(session =>
         session.location?.toLowerCase().includes(filters.location.toLowerCase()) ?? false
       )
     }
@@ -99,8 +84,8 @@ export default function HistoryPage() {
       filtered = filtered.filter(session => {
         const sessionProfitLoss = session.cash_out - session.buy_in
         return filters.profitLoss === 'profit' ? sessionProfitLoss > 0 :
-               filters.profitLoss === 'loss' ? sessionProfitLoss < 0 :
-               sessionProfitLoss === 0
+          filters.profitLoss === 'loss' ? sessionProfitLoss < 0 :
+            sessionProfitLoss === 0
       })
     }
 
@@ -116,27 +101,10 @@ export default function HistoryPage() {
     })
   }
 
-  const fetchSessions = async () => {
+  const loadSessions = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (!user) {
-        toast.error('You must be logged in to view your history')
-        return
-      }
-
-      const { data, error } = await supabase
-        .from('poker_sessions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-
-      if (error) {
-        toast.error('Error loading history')
-        return
-      }
-
-      setSessions(data || [])
+      const data = await fetchSessions()
+      setSessions(data)
     } catch (error) {
       console.error('Error:', error)
       toast.error('An error occurred while loading history')
@@ -147,23 +115,9 @@ export default function HistoryPage() {
 
   const handleDeleteSession = async (sessionId: string) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (!user) {
-        toast.error('You must be logged in to delete a session')
-        return
-      }
-
-      const { error } = await supabase
-        .from('poker_sessions')
-        .delete()
-        .eq('id', sessionId)
-        .eq('user_id', user.id)
-
-      if (error) throw new Error('Error deleting session')
-
+      await deletePokerSession(sessionId)
       toast.success('Session deleted successfully')
-      fetchSessions() // Refresh data
+      loadSessions()
     } catch (error) {
       console.error('Error:', error)
       toast.error(error instanceof Error ? error.message : 'An error occurred')
@@ -175,38 +129,20 @@ export default function HistoryPage() {
     if (!editingSession) return
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (!user) {
-        toast.error('You must be logged in to edit a session')
-        return
-      }
-
-      const updatedSession = {
+      await updatePokerSession(editingSession.id, {
         buy_in: Number(editingSession.buy_in),
         cash_out: Number(editingSession.cash_out),
         duration: Number(editingSession.duration),
         notes: editingSession.notes || '',
         game_type: editingSession.game_type,
         location: editingSession.location,
-        blinds: editingSession.blinds
-      }
-
-      const { error } = await supabase
-        .from('poker_sessions')
-        .update(updatedSession)
-        .eq('id', editingSession.id)
-        .eq('user_id', user.id)
-
-      if (error) {
-        console.error('Supabase error:', error)
-        throw new Error(error.message)
-      }
+        blinds: editingSession.blinds,
+      })
 
       toast.success('Session updated successfully')
       setIsEditingSession(false)
       setEditingSession(null)
-      fetchSessions() // Refresh data
+      loadSessions()
     } catch (error) {
       console.error('Error:', error)
       toast.error(error instanceof Error ? error.message : 'An error occurred')
@@ -220,9 +156,9 @@ export default function HistoryPage() {
   return (
     <div className="min-h-screen bg-background relative flex flex-col">
       <Header />
-      
+
       <div className="container mx-auto px-4 py-24 relative z-10 mt-36 flex-grow">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
@@ -260,14 +196,14 @@ export default function HistoryPage() {
 
           <AnimatePresence>
             {showFilters && (
-              <motion.div 
+              <motion.div
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.3, ease: "easeInOut" }}
                 className="overflow-hidden"
               >
-                <motion.div 
+                <motion.div
                   initial={{ y: -20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   exit={{ y: -20, opacity: 0 }}
@@ -279,7 +215,7 @@ export default function HistoryPage() {
                     <Input
                       type="date"
                       value={filters.startDate}
-                      onChange={(e) => setFilters({...filters, startDate: e.target.value})}
+                      onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
                       className="bg-black/40 border-gray-700 text-white"
                     />
                   </div>
@@ -289,7 +225,7 @@ export default function HistoryPage() {
                       type="text"
                       placeholder="Filter by game type..."
                       value={filters.gameType}
-                      onChange={(e) => setFilters({...filters, gameType: e.target.value})}
+                      onChange={(e) => setFilters({ ...filters, gameType: e.target.value })}
                       className="bg-black/40 border-gray-700 text-white"
                     />
                   </div>
@@ -299,7 +235,7 @@ export default function HistoryPage() {
                       type="text"
                       placeholder="Filter by location..."
                       value={filters.location}
-                      onChange={(e) => setFilters({...filters, location: e.target.value})}
+                      onChange={(e) => setFilters({ ...filters, location: e.target.value })}
                       className="bg-black/40 border-gray-700 text-white"
                     />
                   </div>
@@ -307,7 +243,7 @@ export default function HistoryPage() {
                     <Label className="text-gray-400">Profit/Loss</Label>
                     <select
                       value={filters.profitLoss}
-                      onChange={(e) => setFilters({...filters, profitLoss: e.target.value})}
+                      onChange={(e) => setFilters({ ...filters, profitLoss: e.target.value })}
                       className="w-full h-10 rounded-md border border-gray-700 bg-black/40 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
                     >
                       <option value="">All</option>
@@ -343,9 +279,9 @@ export default function HistoryPage() {
               {filteredSessions.map((session) => {
                 const profitLoss = session.cash_out - session.buy_in
                 const roi = ((profitLoss / session.buy_in) * 100).toFixed(1)
-                
+
                 return (
-                  <TableRow 
+                  <TableRow
                     key={session.id}
                     className="cursor-pointer hover:bg-black/30 transition-colors duration-200"
                     onClick={() => setSelectedSession(session)}
@@ -428,11 +364,11 @@ export default function HistoryPage() {
 
       {/* Notes Modal */}
       {selectedSession && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
           onClick={() => setSelectedSession(null)}
         >
-          <div 
+          <div
             className="bg-black/90 border border-white/10 rounded-lg w-full max-w-2xl"
             onClick={(e) => e.stopPropagation()}
           >
@@ -495,14 +431,14 @@ export default function HistoryPage() {
 
       {/* Edit Session Modal */}
       {isEditingSession && editingSession && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
           onClick={() => {
             setIsEditingSession(false)
             setEditingSession(null)
           }}
         >
-          <div 
+          <div
             className="bg-black/90 border border-white/10 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
@@ -526,42 +462,42 @@ export default function HistoryPage() {
                 <div className="space-y-4">
                   <div className="group">
                     <Label htmlFor="edit-date" className="text-gray-400 group-hover:text-white transition-colors duration-200">Date *</Label>
-                    <Input 
-                      id="edit-date" 
-                      type="date" 
+                    <Input
+                      id="edit-date"
+                      type="date"
                       className="bg-black/40 border-gray-700 text-white hover:border-primary/50 focus:border-primary transition-all duration-200"
                       value={new Date(editingSession.created_at).toISOString().split('T')[0]}
-                      onChange={(e) => setEditingSession({...editingSession, created_at: e.target.value})}
+                      onChange={(e) => setEditingSession({ ...editingSession, created_at: e.target.value })}
                       required
                     />
                   </div>
                   <div className="group">
                     <Label htmlFor="edit-game-type" className="text-gray-400 group-hover:text-white transition-colors duration-200">Game Type *</Label>
-                    <Input 
-                      id="edit-game-type" 
+                    <Input
+                      id="edit-game-type"
                       className="bg-black/40 border-gray-700 text-white hover:border-primary/50 focus:border-primary transition-all duration-200"
-                      value={editingSession.game_type}
-                      onChange={(e) => setEditingSession({...editingSession, game_type: e.target.value})}
+                      value={editingSession.game_type ?? ''}
+                      onChange={(e) => setEditingSession({ ...editingSession, game_type: e.target.value })}
                       required
                     />
                   </div>
                   <div className="group">
                     <Label htmlFor="edit-blinds" className="text-gray-400 group-hover:text-white transition-colors duration-200">Blinds *</Label>
-                    <Input 
-                      id="edit-blinds" 
+                    <Input
+                      id="edit-blinds"
                       className="bg-black/40 border-gray-700 text-white hover:border-primary/50 focus:border-primary transition-all duration-200"
-                      value={editingSession.blinds}
-                      onChange={(e) => setEditingSession({...editingSession, blinds: e.target.value})}
+                      value={editingSession.blinds ?? ''}
+                      onChange={(e) => setEditingSession({ ...editingSession, blinds: e.target.value })}
                       required
                     />
                   </div>
                   <div className="group">
                     <Label htmlFor="edit-location" className="text-gray-400 group-hover:text-white transition-colors duration-200">Location *</Label>
-                    <Input 
-                      id="edit-location" 
+                    <Input
+                      id="edit-location"
                       className="bg-black/40 border-gray-700 text-white hover:border-primary/50 focus:border-primary transition-all duration-200"
-                      value={editingSession.location}
-                      onChange={(e) => setEditingSession({...editingSession, location: e.target.value})}
+                      value={editingSession.location ?? ''}
+                      onChange={(e) => setEditingSession({ ...editingSession, location: e.target.value })}
                       required
                     />
                   </div>
@@ -569,40 +505,40 @@ export default function HistoryPage() {
                 <div className="space-y-4">
                   <div className="group">
                     <Label htmlFor="edit-buyin" className="text-gray-400 group-hover:text-white transition-colors duration-200">Buy-in *</Label>
-                    <Input 
-                      id="edit-buyin" 
-                      type="number" 
+                    <Input
+                      id="edit-buyin"
+                      type="number"
                       min="0"
                       step="0.01"
                       className="bg-black/40 border-gray-700 text-white hover:border-primary/50 focus:border-primary transition-all duration-200"
                       value={editingSession.buy_in}
-                      onChange={(e) => setEditingSession({...editingSession, buy_in: parseFloat(e.target.value)})}
+                      onChange={(e) => setEditingSession({ ...editingSession, buy_in: parseFloat(e.target.value) })}
                       required
                     />
                   </div>
                   <div className="group">
                     <Label htmlFor="edit-cashout" className="text-gray-400 group-hover:text-white transition-colors duration-200">Cash-out *</Label>
-                    <Input 
-                      id="edit-cashout" 
-                      type="number" 
+                    <Input
+                      id="edit-cashout"
+                      type="number"
                       min="0"
                       step="0.01"
                       className="bg-black/40 border-gray-700 text-white hover:border-primary/50 focus:border-primary transition-all duration-200"
                       value={editingSession.cash_out}
-                      onChange={(e) => setEditingSession({...editingSession, cash_out: parseFloat(e.target.value)})}
+                      onChange={(e) => setEditingSession({ ...editingSession, cash_out: parseFloat(e.target.value) })}
                       required
                     />
                   </div>
                   <div className="group">
                     <Label htmlFor="edit-duration" className="text-gray-400 group-hover:text-white transition-colors duration-200">Duration (hours) *</Label>
-                    <Input 
-                      id="edit-duration" 
-                      type="number" 
+                    <Input
+                      id="edit-duration"
+                      type="number"
                       min="0"
                       step="0.5"
                       className="bg-black/40 border-gray-700 text-white hover:border-primary/50 focus:border-primary transition-all duration-200"
                       value={editingSession.duration}
-                      onChange={(e) => setEditingSession({...editingSession, duration: parseFloat(e.target.value)})}
+                      onChange={(e) => setEditingSession({ ...editingSession, duration: parseFloat(e.target.value) })}
                       required
                     />
                   </div>
@@ -610,17 +546,17 @@ export default function HistoryPage() {
                 <div className="col-span-2">
                   <div className="group">
                     <Label htmlFor="edit-notes" className="text-gray-400 group-hover:text-white transition-colors duration-200">Notes</Label>
-                    <Input 
-                      id="edit-notes" 
+                    <Input
+                      id="edit-notes"
                       className="bg-black/40 border-gray-700 text-white hover:border-primary/50 focus:border-primary transition-all duration-200"
-                      value={editingSession.notes}
-                      onChange={(e) => setEditingSession({...editingSession, notes: e.target.value})}
+                      value={editingSession.notes ?? ''}
+                      onChange={(e) => setEditingSession({ ...editingSession, notes: e.target.value })}
                     />
                   </div>
                 </div>
                 <div className="col-span-2">
-                  <button 
-                    type="submit" 
+                  <button
+                    type="submit"
                     className="w-full relative inline-flex items-center justify-center font-display tracking-wide transition-all duration-300 ease-in-out bg-primary/20 hover:bg-primary/30 text-white px-6 py-3 text-base gap-2 rounded-lg overflow-hidden group"
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/20 to-primary/0 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
